@@ -27,12 +27,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fritzthekid/printqrview/internal/config"
-	"github.com/fritzthekid/printqrview/internal/envfile"
-	"github.com/fritzthekid/printqrview/internal/filenames"
-	"github.com/fritzthekid/printqrview/internal/nextcloud"
-	"github.com/fritzthekid/printqrview/internal/qrview"
-	"github.com/fritzthekid/printqrview/internal/sharepassword"
+	"github.com/fritzthekid/myshare/internal/config"
+	"github.com/fritzthekid/myshare/internal/envfile"
+	"github.com/fritzthekid/myshare/internal/filenames"
+	"github.com/fritzthekid/myshare/internal/nextcloud"
+	"github.com/fritzthekid/myshare/internal/qrview"
+	"github.com/fritzthekid/myshare/internal/sharepassword"
 )
 
 // Als Funktionsvariablen, damit Tests sie durch Fakes ersetzen können

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fritzthekid/printqrview/internal/config"
+	"github.com/fritzthekid/myshare/internal/config"
 )
 
 const httpTimeout = 30 * time.Second

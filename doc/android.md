@@ -42,7 +42,7 @@ nötigen Quellcode packen und per eigenem `sendfile` übertragen (dogfooding):
 ```bash
 # auf dem Linux-Rechner:
 tar czf webshare-src.tar.gz go.mod go.sum cmd/webshare internal
-sudo bash -c 'set -a; . /etc/printtoqrview/backend.env; set +a; ./sendfile webshare-src.tar.gz webshare-src.tar.gz'
+sudo bash -c 'set -a; . /etc/myshare/backend.env; set +a; ./sendfile webshare-src.tar.gz webshare-src.tar.gz'
 # -> Link/QR-Code auf dem Handy öffnen, Datei landet in ~/storage/downloads/
 ```
 

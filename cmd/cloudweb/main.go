@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fritzthekid/printqrview/internal/envfile"
+	"github.com/fritzthekid/myshare/internal/envfile"
 )
 
 //go:embed static/index.html

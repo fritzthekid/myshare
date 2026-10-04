@@ -4,21 +4,21 @@
 # aus einer root-only lesbaren Datei nachgeladen werden, bevor das
 # eigentliche (kompilierte) Backend läuft.
 set -a
-[ -r /etc/printtoqrview/backend.env ] && . /etc/printtoqrview/backend.env
+[ -r /etc/myshare/backend.env ] && . /etc/myshare/backend.env
 set +a
 
 # CUPS setzt $PRINTER auf den Namen der Warteschlange, über die gedruckt
 # wurde - so lassen sich mehrere Warteschlangen mit demselben Backend-Code
 # fest auf unterschiedliche Anzeige-Ziele routen, statt einen einzigen
 # globalen Hook in backend.env zu teilen. Ohne Treffer greift der
-# PRINTTOQRVIEW_DISPLAY_HOOK-Default aus backend.env (falls gesetzt).
+# MYSHARE_DISPLAY_HOOK-Default aus backend.env (falls gesetzt).
 case "$PRINTER" in
   CloudToRaspi)
-    export PRINTTOQRVIEW_DISPLAY_HOOK=/usr/local/lib/printtoqrview/toraspi.sh
+    export MYSHARE_DISPLAY_HOOK=/usr/local/lib/myshare/toraspi.sh
     ;;
   CloudWeb)
-    export PRINTTOQRVIEW_DISPLAY_HOOK=/usr/local/lib/printtoqrview/push-to-cloudweb.sh
+    export MYSHARE_DISPLAY_HOOK=/usr/local/lib/myshare/push-to-cloudweb.sh
     ;;
 esac
 
-exec /usr/local/lib/printtoqrview/backend "$@"
+exec /usr/local/lib/myshare/backend "$@"

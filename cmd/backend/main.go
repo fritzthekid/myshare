@@ -25,11 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fritzthekid/printqrview/internal/config"
-	"github.com/fritzthekid/printqrview/internal/filenames"
-	"github.com/fritzthekid/printqrview/internal/nextcloud"
-	"github.com/fritzthekid/printqrview/internal/output"
-	"github.com/fritzthekid/printqrview/internal/sharepassword"
+	"github.com/fritzthekid/myshare/internal/config"
+	"github.com/fritzthekid/myshare/internal/filenames"
+	"github.com/fritzthekid/myshare/internal/nextcloud"
+	"github.com/fritzthekid/myshare/internal/output"
+	"github.com/fritzthekid/myshare/internal/sharepassword"
 )
 
 // Als Funktionsvariablen, damit Tests sie durch Fakes ersetzen können.
@@ -175,10 +175,10 @@ func main() {
 	// "tmp" ist relativ zum Arbeitsverzeichnis des Prozesses; unter CUPS ist
 	// das nicht das Projektverzeichnis, deshalb per Env-Var überschreibbar
 	// (siehe deploy/backend.env.example).
-	if dir := os.Getenv("PRINTTOQRVIEW_OUTPUT_DIR"); dir != "" {
+	if dir := os.Getenv("MYSHARE_OUTPUT_DIR"); dir != "" {
 		output.Dir = dir
 	}
-	if hook := os.Getenv("PRINTTOQRVIEW_DISPLAY_HOOK"); hook != "" {
+	if hook := os.Getenv("MYSHARE_DISPLAY_HOOK"); hook != "" {
 		output.Hook = hook
 	}
 	os.Exit(run(os.Args, nil, nil, nil))

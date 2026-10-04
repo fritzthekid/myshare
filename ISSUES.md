@@ -14,7 +14,7 @@ Anforderung schon umgesetzt war.
 
 ## Druckertreiber-Ausgabe: CloudWeb statt Raspberry Pi
 
-GitHub-Issue: [#4](https://github.com/fritzthekid/printqrview/issues/4) (geschlossen)
+GitHub-Issue: [#4](https://github.com/fritzthekid/myshare/issues/4) (geschlossen)
 
 **Ziel:** Ein beliebiges Gerät im LAN - insbesondere ein Handy, einfach im
 Browser - soll als Anzeige für QR-Code + Link dienen können, ohne dass
@@ -52,7 +52,7 @@ Raspberry-Pi-Framebuffer als Ausgabeweg.
 
 ## Passwortschutz für CloudWeb-Freigaben (`scripts/share-to-web.sh`)
 
-GitHub-Issue: [#5](https://github.com/fritzthekid/printqrview/issues/5) (geschlossen)
+GitHub-Issue: [#5](https://github.com/fritzthekid/myshare/issues/5) (geschlossen)
 
 **Ziel:** Für größere/sensiblere Dateien (z. B. ZIP-Archive) soll eine
 `CloudWeb`-Freigabe zusätzlich per Passwort geschützt werden können, ohne

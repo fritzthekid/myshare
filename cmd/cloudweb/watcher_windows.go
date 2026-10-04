@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/fritzthekid/printqrview/internal/config"
-	"github.com/fritzthekid/printqrview/internal/envfile"
-	"github.com/fritzthekid/printqrview/internal/filenames"
-	"github.com/fritzthekid/printqrview/internal/nextcloud"
-	"github.com/fritzthekid/printqrview/internal/qrview"
+	"github.com/fritzthekid/myshare/internal/config"
+	"github.com/fritzthekid/myshare/internal/envfile"
+	"github.com/fritzthekid/myshare/internal/filenames"
+	"github.com/fritzthekid/myshare/internal/nextcloud"
+	"github.com/fritzthekid/myshare/internal/qrview"
 )
 
 // printPollInterval bestimmt, wie schnell ein Druckauftrag über den
@@ -23,7 +23,7 @@ import (
 const printPollInterval = 1 * time.Second
 
 // incomingFileName ist der Name, den der Druckerport
-// "C:\ProgramData\printtoqrview\incoming.pdf" erzeugt (siehe
+// "C:\ProgramData\myshare\incoming.pdf" erzeugt (siehe
 // deploy/windows/install.ps1: Add-PrinterPort).
 const incomingFileName = "incoming.pdf"
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Ausgabe-Hook fuer backend/sendfile (siehe internal/output.Hook, aktiviert
-# per PRINTTOQRVIEW_DISPLAY_HOOK=/pfad/zu/toraspi.sh in backend.env).
+# per MYSHARE_DISPLAY_HOOK=/pfad/zu/toraspi.sh in backend.env).
 #
 # Aufruf durch den Go-Code: toraspi.sh <qr-png-pfad> <link>
 #

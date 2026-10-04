@@ -1,6 +1,6 @@
 *PPD-Adobe: "4.3"
 *%
-*% printtoqrview - generische PDF-Passthrough-Warteschlange, gemeinsam
+*% myshare - generische PDF-Passthrough-Warteschlange, gemeinsam
 *% genutzt von den Warteschlangen "CloudToRaspi" und "CloudWeb" (nur der
 *% Warteschlangen-Name entscheidet, welches Anzeige-Ziel bedient wird,
 *% siehe deploy/nextcloud-backend-wrapper.sh). Analog zur Technik von
@@ -14,10 +14,10 @@
 *LanguageEncoding: ISOLatin1
 *PCFileName: "PRNTQRV.PPD"
 *Manufacturer: "Generic"
-*Product: "(printtoqrview)"
-*ModelName: "printtoqrview"
-*ShortNickName: "printtoqrview"
-*NickName: "Generic printtoqrview PDF-Passthrough"
+*Product: "(myshare)"
+*ModelName: "myshare"
+*ShortNickName: "myshare"
+*NickName: "Generic myshare PDF-Passthrough"
 *PSVersion: "(3010.000) 0"
 *LanguageLevel: "3"
 *ColorDevice: True

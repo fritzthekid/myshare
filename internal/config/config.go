@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fritzthekid/printqrview/internal/sharepassword"
+	"github.com/fritzthekid/myshare/internal/sharepassword"
 )
 
 type Config struct {

@@ -11,7 +11,7 @@ CloudWeb fuer Windows - Installation
      .\install.ps1
 
    Legt an: Drucker "CloudWeb", Windows-Dienst "CloudWeb", Konfigurations-
-   vorlage C:\ProgramData\printtoqrview\backend.env.
+   vorlage C:\ProgramData\myshare\backend.env.
 
 3) In einer NORMALEN PowerShell (ohne "Als Administrator ausfuehren" -
    einfach auf den PowerShell-Eintrag im Start-Menu klicken), im selben
@@ -26,7 +26,7 @@ CloudWeb fuer Windows - Installation
 
 4) Zugangsdaten eintragen:
 
-     notepad C:\ProgramData\printtoqrview\backend.env
+     notepad C:\ProgramData\myshare\backend.env
 
    NC_BASE_URL, NC_USERNAME, NC_PASSWORD (Nextcloud-App-Passwort, nicht das
    Konto-Passwort) eintragen - Werte OHNE Anfuehrungszeichen! Danach:
@@ -43,5 +43,5 @@ Bei Problemen: cloudweb.exe laesst sich auch interaktiv statt als Dienst
 starten (zeigt Log-Ausgaben direkt im Fenster):
 
      Stop-Service CloudWeb
-     C:\ProgramData\printtoqrview\cloudweb.exe
+     C:\ProgramData\myshare\cloudweb.exe
      (mit Strg+C beenden, danach: Start-Service CloudWeb)

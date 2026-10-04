@@ -1,4 +1,4 @@
-module github.com/fritzthekid/printqrview
+module github.com/fritzthekid/myshare
 
 go 1.27.1
 

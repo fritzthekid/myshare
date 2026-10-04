@@ -85,7 +85,7 @@ Wie im Original sollte möglichst viel Code wiederverwendet werden. Als Programm
   Dienst-Neuregistrierung bei jeder Änderung.
 
 - Konfigurationsdatei (Windows-Äquivalent zu `EnvironmentFile=` unter
-  systemd): `C:\ProgramData\printtoqrview\backend.env`, KEY=VALUE-Format wie
+  systemd): `C:\ProgramData\myshare\backend.env`, KEY=VALUE-Format wie
   unter Linux. Da `New-Service` keine Umgebungsdatei kennt, liest
   `cloudweb.exe` sie beim Start selbst ein (`internal/envfile`, neues
   plattformneutrales Paket mit Windows-/Linux-Default-Pfad per Build-Tag -
@@ -103,23 +103,23 @@ Wie im Original sollte möglichst viel Code wiederverwendet werden. Als Programm
   Print to PDF" bleibt unverändert (anderer Name, eigener Port, keine
   Registry-/Treiber-Änderung an ihm). **Live in der Windows-10-VM
   verifiziert** (2026-09-16): Druck über den neuen Drucker "CloudWeb" erzeugt
-  ohne jeden Dialog `C:\ProgramData\printtoqrview\incoming.pdf`;
+  ohne jeden Dialog `C:\ProgramData\myshare\incoming.pdf`;
   `Get-Printer` zeigt anschließend weiterhin unverändert "Microsoft Print to
   PDF" (`PORTPROMPT:`) parallel zu "CloudWeb" (fixer Datei-Port).
   - Der Original-Drucker nutzt den Spezial-Port `PORTPROMPT:`, der bei jedem
     Druck den "Speichern unter"-Dialog öffnet - deshalb kann/darf er nicht
     wiederverwendet werden.
   - Stattdessen wird ein **lokaler Datei-Port mit fixem Pfad** angelegt, z. B.
-    `C:\ProgramData\printtoqrview\incoming.pdf` (lokale Ports werden unter
+    `C:\ProgramData\myshare\incoming.pdf` (lokale Ports werden unter
     Windows direkt über ihren Dateipfad als Portname identifiziert - kein
     Portmonitor-Code nötig). Der Spooler schreibt bei jedem Druckauftrag
     kommentarlos in genau diese Datei, ganz ohne Dialog.
   - Neuer Drucker (Name **"CloudWeb"**, analog zur Linux-Warteschlange) wird
     mit demselben Inbox-Treiber an diesen Port gebunden, z. B.:
     ```powershell
-    Add-PrinterPort -Name "C:\ProgramData\printtoqrview\incoming.pdf"
+    Add-PrinterPort -Name "C:\ProgramData\myshare\incoming.pdf"
     Add-Printer -Name "CloudWeb" -DriverName "Microsoft Print To PDF" `
-      -PortName "C:\ProgramData\printtoqrview\incoming.pdf"
+      -PortName "C:\ProgramData\myshare\incoming.pdf"
     ```
   - Der Windows-Dienst (`cloudweb.exe`, siehe unten) enthält einen
     Ordner-Watcher (einfaches 1s-Polling per `time.Ticker`, bewusst ohne

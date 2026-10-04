@@ -1,8 +1,8 @@
 // Package qrview erzeugt aus dem Freigabelink einen QR-Code als PNG.
 //
-// Das ist der namensgebende Kern von *printtoqrview*: Der öffentliche Link
-// soll später als QR-Code angezeigt werden. Vorläufig wird das PNG nur in
-// eine Datei geschrieben (analog zur Text-Ausgabe des Links).
+// Der öffentliche Link soll später als QR-Code angezeigt werden. Vorläufig
+// wird das PNG nur in eine Datei geschrieben (analog zur Text-Ausgabe des
+// Links).
 package qrview
 
 import (

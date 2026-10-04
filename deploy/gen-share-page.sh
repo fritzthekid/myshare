@@ -12,7 +12,7 @@
 # CUPS-Backend-Teil schon vormacht).
 #
 # Aufruf:
-#   ./deploy/gen-share-page.sh /etc/printtoqrview/backend.env > mein-handy.html
+#   ./deploy/gen-share-page.sh /etc/myshare/backend.env > mein-handy.html
 # oder mit eigenen Werten in der Umgebung:
 #   NC_BASE_URL=... NC_USERNAME=... NC_PASSWORD=... ./deploy/gen-share-page.sh > mein-handy.html
 set -euo pipefail
@@ -57,7 +57,7 @@ CONFIG_JSON=$(printf '{"baseUrl":"%s","username":"%s","password":"%s","targetDir
 # interpretieren Backslash-Escapes (POSIX-awk-Eigenheit) und würden unser
 # gerade erzeugtes \" bzw. \\ wieder entwerten - ENVIRON-Werte bleiben
 # dagegen unverändert.
-PRINTTOQRVIEW_CFG_JSON="$CONFIG_JSON" awk '
-  /<!--PRINTTOQRVIEW_CONFIG-->/ { print "<script>window.PRINTTOQRVIEW_CONFIG = " ENVIRON["PRINTTOQRVIEW_CFG_JSON"] ";</script>"; next }
+MYSHARE_CFG_JSON="$CONFIG_JSON" awk '
+  /<!--MYSHARE_CONFIG-->/ { print "<script>window.MYSHARE_CONFIG = " ENVIRON["MYSHARE_CFG_JSON"] ";</script>"; next }
   { print }
 ' "$TEMPLATE"

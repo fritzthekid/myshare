@@ -2,7 +2,7 @@
 # Teilt eine Datei über eine der bereits eingerichteten CUPS-Warteschlangen -
 # gleicher Aufruf wie sendfile, aber ohne dass der aufrufende Nutzer selbst
 # an die Nextcloud-Zugangsdaten kommen muss (die liegen ausschließlich beim
-# CUPS-Backend, siehe /etc/printtoqrview/backend.env). Setzt voraus, dass
+# CUPS-Backend, siehe /etc/myshare/backend.env). Setzt voraus, dass
 # deploy/install.sh auf diesem Rechner bereits gelaufen ist.
 #
 # Aufruf:

@@ -1,8 +1,10 @@
-# nextcloud-pdf-backend
+# myshare
 
 CUPS-Backend (in Go), das einen Druckauftrag als PDF in eine Nextcloud-Instanz
 hochlädt, einen öffentlichen, ablaufenden Freigabelink erzeugt und diesen
-(vorläufig) als Log-Zeile + QR-Code ausgibt.
+(vorläufig) als Log-Zeile + QR-Code ausgibt. Daneben eigenständige Wege,
+beliebige Dateien auf demselben Weg zu teilen - vom Terminal, vom Handy
+oder über Explorer "Senden an" unter Windows (siehe unten).
 
 ## Warum "Backend" statt "Filter"?
 
@@ -107,7 +109,7 @@ Alle Bausteine liegen in `deploy/`:
 |-------|-------|
 | `deploy/install.sh` | Installiert Binary + Wrapper + PPD, legt die Warteschlangen an (idempotent) |
 | `deploy/nextcloud-backend-wrapper.sh` | Landet als `/usr/lib/cups/backend/nextcloud`; lädt `NC_*`-Env-Vars nach (CUPS startet Backends mit minimaler Umgebung) und wählt den Anzeige-Hook anhand der Warteschlange |
-| `deploy/backend.env.example` | Vorlage für `/etc/printtoqrview/backend.env` (Zugangsdaten, `chmod 600 root:root`) |
+| `deploy/backend.env.example` | Vorlage für `/etc/myshare/backend.env` (Zugangsdaten, `chmod 600 root:root`) |
 | `deploy/cloudpdf.ppd` | PPD für eine generische PDF-Passthrough-Warteschlange (Technik wie bei `cups-pdf`: `cupsFilter2` erklärt `application/pdf` zum Endformat, CUPS stoppt die Filterkette dort, statt zu rastern) - von beiden Warteschlangen gemeinsam genutzt |
 | `deploy/webshare.service` | systemd-Unit für `webshare` (siehe Abschnitt "Vom Handy teilen"), wird von `install.sh` mit installiert falls `webshare` gebaut wurde |
 | `deploy/cloudweb.service` | systemd-Unit für `cloudweb` (siehe Abschnitt "Ausgabe auf einem externen Display"), wird von `install.sh` mit installiert falls `cloudweb` gebaut wurde |
@@ -128,12 +130,12 @@ Installation:
 deploy/build.sh
 sudo ./deploy/install.sh
 # ggf. Zugangsdaten nachtragen:
-sudo "$EDITOR" /etc/printtoqrview/backend.env
+sudo "$EDITOR" /etc/myshare/backend.env
 sudo systemctl restart cups
 
 lp -d CloudToRaspi testdruck.pdf
 lp -d CloudWeb testdruck.pdf
-tail -f /var/lib/printtoqrview/tmp/links.log
+tail -f /var/lib/myshare/tmp/links.log
 ```
 
 `install.sh` legt außerdem `/usr/lib/cups/backend/nextcloud` mit `chmod 700 root:root`
@@ -153,7 +155,7 @@ entfernt und durch die beiden obigen ersetzt.
 Ist die CUPS-Warteschlange einmal eingerichtet, kann `scripts/share.sh` als
 schlanke Alternative zu `sendfile` dienen: gleicher Aufruf, aber ohne dass
 der aufrufende Nutzer selbst an die Nextcloud-Zugangsdaten kommen muss -
-die liegen ausschließlich beim CUPS-Backend (`/etc/printtoqrview/backend.env`),
+die liegen ausschließlich beim CUPS-Backend (`/etc/myshare/backend.env`),
 `lp` reicht die Datei einfach durch:
 
 ```bash
@@ -195,7 +197,7 @@ nicht scheitern.
 Für die beiden CUPS-Warteschlangen (`CloudToRaspi`/`CloudWeb`, siehe
 "Einbindung in CUPS") entscheidet allein der gedruckte Warteschlangen-Name,
 welcher Hook läuft - `deploy/nextcloud-backend-wrapper.sh` setzt ihn
-automatisch. `PRINTTOQRVIEW_DISPLAY_HOOK=<pfad>` in `backend.env` bleibt
+automatisch. `MYSHARE_DISPLAY_HOOK=<pfad>` in `backend.env` bleibt
 der Weg dafür bei `sendfile`/`webshare` (dort gibt es keine Warteschlange)
 sowie als Fallback für andere/zukünftige Warteschlangen.
 
@@ -209,8 +211,8 @@ Raspberry-Pi-Display (Warteschlange `CloudToRaspi`):
 | `raspi/bin/fb-image-watcher.sh` + `raspi/services/fb-image-watcher.service` | Raspberry Pi | systemd-Service, zeigt neue Bilder zeitbegrenzt auf dem Framebuffer an |
 
 `deploy/install.sh` installiert `toraspi.sh` (falls vorhanden) automatisch
-nach `/usr/local/lib/printtoqrview/toraspi.sh`; Aktivierung + Host/Timeout
-über `PRINTTOQRVIEW_DISPLAY_HOOK`, `RASPI_HOST`, `RASPI_DISPLAY_TIMEOUT` in
+nach `/usr/local/lib/myshare/toraspi.sh`; Aktivierung + Host/Timeout
+über `MYSHARE_DISPLAY_HOOK`, `RASPI_HOST`, `RASPI_DISPLAY_TIMEOUT` in
 `backend.env` (Vorlage in `deploy/backend.env.example`). Voraussetzung:
 `convert` (ImageMagick) sowie ein passwortloser SSH-Zugang von root (CUPS
 führt das Backend als root aus) zum Pi.
@@ -232,12 +234,12 @@ go build -o cloudweb ./cmd/cloudweb
 ```
 
 Über die Warteschlange `CloudWeb` drucken, um Ergebnisse dorthin zu
-schicken (statt `CloudToRaspi` für den Pi) - `PRINTTOQRVIEW_DISPLAY_HOOK`
+schicken (statt `CloudToRaspi` für den Pi) - `MYSHARE_DISPLAY_HOOK`
 wird für diese Warteschlange automatisch gesetzt, siehe oben. Für
 `sendfile`/`webshare` stattdessen von Hand in `backend.env`:
 
 ```
-PRINTTOQRVIEW_DISPLAY_HOOK=/usr/local/lib/printtoqrview/push-to-cloudweb.sh
+MYSHARE_DISPLAY_HOOK=/usr/local/lib/myshare/push-to-cloudweb.sh
 CLOUDWEB_URL=http://127.0.0.1:40080
 ```
 
@@ -245,9 +247,9 @@ Der Push-Endpunkt (`POST /push`) nimmt nur Anfragen von `localhost` an -
 der Hook läuft ja auf demselben Host wie `cloudweb` selbst; die
 Anzeigeseite bleibt normal im Netz erreichbar. `deploy/install.sh`
 installiert `cloudweb` (falls gebaut) automatisch als systemd-Service
-`printtoqrview-cloudweb` (läuft mit `DynamicUser=yes`, braucht anders als
+`myshare-cloudweb` (läuft mit `DynamicUser=yes`, braucht anders als
 `backend`/`webshare` keine Sonderrechte) sowie das Hook-Skript nach
-`/usr/local/lib/printtoqrview/push-to-cloudweb.sh`.
+`/usr/local/lib/myshare/push-to-cloudweb.sh`.
 
 ## Tests
 
@@ -297,7 +299,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
 richtet den Explorer-"Senden an"-Eintrag "CloudWeb Share" ein.
 
-Danach `C:\ProgramData\printtoqrview\backend.env` mit den echten
+Danach `C:\ProgramData\myshare\backend.env` mit den echten
 Nextcloud-Zugangsdaten füllen (Werte **ohne** Anführungszeichen - weder
 `internal/envfile` noch systemds `EnvironmentFile=` unter Linux entfernen
 sie, sie wären sonst wörtlicher Bestandteil des Werts) und

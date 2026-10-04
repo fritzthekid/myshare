@@ -4,7 +4,7 @@
   Installiert den CloudWeb-Druckertreiber + Dienst unter Windows.
 .DESCRIPTION
   Siehe doc/anforderung_windows.md. Legt an bzw. aktualisiert idempotent:
-    - C:\ProgramData\printtoqrview - Konfiguration (backend.env), Binaries
+    - C:\ProgramData\myshare - Konfiguration (backend.env), Binaries
       und das feste Druckziel (incoming.pdf).
     - Drucker "CloudWeb" mit dem vorhandenen Inbox-Treiber
       "Microsoft Print To PDF", gebunden an einen festen Datei-Port statt
@@ -25,7 +25,7 @@
 
 $ErrorActionPreference = "Stop"
 
-$DataDir = "C:\ProgramData\printtoqrview"
+$DataDir = "C:\ProgramData\myshare"
 $PortPath = Join-Path $DataDir "incoming.pdf"
 $EnvPath = Join-Path $DataDir "backend.env"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -50,10 +50,19 @@ if (-not (Test-Path $EnvPath)) {
 }
 
 Write-Host "Richte Drucker 'CloudWeb' ein ..."
+$existingPrinter = Get-Printer -Name "CloudWeb" -ErrorAction SilentlyContinue
+if ($existingPrinter -and $existingPrinter.PortName -ne $PortPath) {
+    # Zeigt noch auf einen alten Pfad (z. B. nach einer Umbenennung wie
+    # printtoqrview -> myshare) - Drucker entfernen, damit er unten sauber
+    # neu an $PortPath gebunden wird, statt still beim alten Port zu bleiben.
+    Write-Warning "Drucker 'CloudWeb' zeigte noch auf $($existingPrinter.PortName) - wird auf $PortPath umgestellt."
+    Remove-Printer -Name "CloudWeb"
+    $existingPrinter = $null
+}
 if (-not (Get-PrinterPort -Name $PortPath -ErrorAction SilentlyContinue)) {
     Add-PrinterPort -Name $PortPath
 }
-if (-not (Get-Printer -Name "CloudWeb" -ErrorAction SilentlyContinue)) {
+if (-not $existingPrinter) {
     Add-Printer -Name "CloudWeb" -DriverName "Microsoft Print To PDF" -PortName $PortPath
 }
 
@@ -64,7 +73,7 @@ if ($existing) {
     sc.exe delete CloudWeb | Out-Null
     Start-Sleep -Seconds 1
 }
-New-Service -Name "CloudWeb" -BinaryPathName $CloudwebExe -DisplayName "CloudWeb (printtoqrview)" -StartupType Automatic | Out-Null
+New-Service -Name "CloudWeb" -BinaryPathName $CloudwebExe -DisplayName "CloudWeb (myshare)" -StartupType Automatic | Out-Null
 Start-Service -Name "CloudWeb"
 
 Write-Host ""

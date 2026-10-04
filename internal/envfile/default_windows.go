@@ -8,7 +8,7 @@ import (
 )
 
 // DefaultDir ist das Windows-Konfig-/Arbeitsverzeichnis, analog zu
-// /etc/printtoqrview unter Linux (siehe deploy/install.sh) - hier liegen
+// /etc/myshare unter Linux (siehe deploy/install.sh) - hier liegen
 // sowohl backend.env als auch (siehe cmd/cloudweb) die feste
 // Druckausgabedatei incoming.pdf.
 func DefaultDir() string {
@@ -16,11 +16,11 @@ func DefaultDir() string {
 	if dir == "" {
 		dir = `C:\ProgramData`
 	}
-	return filepath.Join(dir, "printtoqrview")
+	return filepath.Join(dir, "myshare")
 }
 
 // DefaultPath ist der Windows-Konfigurationspfad, analog zu
-// /etc/printtoqrview/backend.env unter Linux (siehe deploy/install.sh).
+// /etc/myshare/backend.env unter Linux (siehe deploy/install.sh).
 func DefaultPath() string {
 	return filepath.Join(DefaultDir(), "backend.env")
 }

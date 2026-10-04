@@ -11,12 +11,12 @@
     .\userinstall.ps1
 
   Setzt voraus, dass install.ps1 vorher (einmalig, als Administrator)
-  gelaufen ist - C:\ProgramData\printtoqrview\fileshare.exe muss existieren.
+  gelaufen ist - C:\ProgramData\myshare\fileshare.exe muss existieren.
 #>
 
 $ErrorActionPreference = "Stop"
 
-$FileshareExe = "C:\ProgramData\printtoqrview\fileshare.exe"
+$FileshareExe = "C:\ProgramData\myshare\fileshare.exe"
 if (-not (Test-Path $FileshareExe)) {
     throw "$FileshareExe fehlt - zuerst install.ps1 als Administrator ausfuehren."
 }

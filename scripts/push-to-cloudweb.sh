@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ausgabe-Hook (siehe internal/output.Hook / PRINTTOQRVIEW_DISPLAY_HOOK):
+# Ausgabe-Hook (siehe internal/output.Hook / MYSHARE_DISPLAY_HOOK):
 # wird von backend/sendfile/webshare nach jedem Erfolg als
 # "push-to-cloudweb.sh <qr-png-pfad> <link> [passwort]" aufgerufen und
 # schickt das Ergebnis per HTTP an einen lokal laufenden cloudweb-Server
@@ -20,9 +20,9 @@ if [ $# -lt 2 ]; then
   cat >&2 <<USAGE
 Aufruf: $0 <qr-png-datei> <link> [passwort]
 
-Das ist der interne Ausgabe-Hook (siehe PRINTTOQRVIEW_DISPLAY_HOOK) - kein
+Das ist der interne Ausgabe-Hook (siehe MYSHARE_DISPLAY_HOOK) - kein
 Upload-Tool. Er erwartet eine bereits fertige QR-Code-PNG (z. B. eine Datei
-aus /var/lib/printtoqrview/tmp/*.png) und reicht sie nur an cloudweb weiter,
+aus /var/lib/myshare/tmp/*.png) und reicht sie nur an cloudweb weiter,
 lädt selbst nichts nach Nextcloud hoch.
 
 Zum Teilen + Anzeigen einer beliebigen Datei stattdessen:

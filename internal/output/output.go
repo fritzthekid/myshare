@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/fritzthekid/printqrview/internal/qrview"
+	"github.com/fritzthekid/myshare/internal/qrview"
 )
 
 // Dir ist das Ausgabeverzeichnis; Tests können es umbiegen.

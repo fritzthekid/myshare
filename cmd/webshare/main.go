@@ -21,11 +21,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fritzthekid/printqrview/internal/config"
-	"github.com/fritzthekid/printqrview/internal/filenames"
-	"github.com/fritzthekid/printqrview/internal/nextcloud"
-	"github.com/fritzthekid/printqrview/internal/output"
-	"github.com/fritzthekid/printqrview/internal/qrview"
+	"github.com/fritzthekid/myshare/internal/config"
+	"github.com/fritzthekid/myshare/internal/filenames"
+	"github.com/fritzthekid/myshare/internal/nextcloud"
+	"github.com/fritzthekid/myshare/internal/output"
+	"github.com/fritzthekid/myshare/internal/qrview"
 )
 
 //go:embed static/index.html
@@ -166,10 +166,10 @@ func main() {
 		log.Fatal("ERROR: WEBSHARE_TOKEN muss gesetzt sein (langes zufälliges Token, z. B. `openssl rand -hex 24`)")
 	}
 
-	if dir := os.Getenv("PRINTTOQRVIEW_OUTPUT_DIR"); dir != "" {
+	if dir := os.Getenv("MYSHARE_OUTPUT_DIR"); dir != "" {
 		output.Dir = dir
 	}
-	if hook := os.Getenv("PRINTTOQRVIEW_DISPLAY_HOOK"); hook != "" {
+	if hook := os.Getenv("MYSHARE_DISPLAY_HOOK"); hook != "" {
 		output.Hook = hook
 	}
 
@@ -179,6 +179,6 @@ func main() {
 	}
 
 	mux := newMux(cfg, token)
-	log.Printf("printtoqrview-webshare hört auf %s (Pfad /s/<token>/)", addr)
+	log.Printf("myshare-webshare hört auf %s (Pfad /s/<token>/)", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }

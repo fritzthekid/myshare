@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fritzthekid/printqrview/internal/config"
-	"github.com/fritzthekid/printqrview/internal/nextcloud"
+	"github.com/fritzthekid/myshare/internal/config"
+	"github.com/fritzthekid/myshare/internal/nextcloud"
 )
 
 var testCfg = &config.Config{

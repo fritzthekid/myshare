@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fritzthekid/printqrview/internal/config"
-	"github.com/fritzthekid/printqrview/internal/nextcloud"
-	"github.com/fritzthekid/printqrview/internal/output"
+	"github.com/fritzthekid/myshare/internal/config"
+	"github.com/fritzthekid/myshare/internal/nextcloud"
+	"github.com/fritzthekid/myshare/internal/output"
 )
 
 const testToken = "s3cr3t-token"

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fritzthekid/printqrview/internal/config"
+	"github.com/fritzthekid/myshare/internal/config"
 )
 
 func testCfg(baseURL string) *config.Config {

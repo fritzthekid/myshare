@@ -1,168 +1,169 @@
 ---
-name: Anforderung / Feature
-about: Druckertreiber (CloudWeb) für Windows portieren
-title: "Druckertreiber (CloudWeb) für Windows portieren"
+name: Requirement / Feature
+about: Port the printer driver (CloudWeb) to Windows
+title: "Port the printer driver (CloudWeb) to Windows"
 labels: "cloudweb_for_windows"
 assignees: "claude"
 ---
 
 <!--
-Nicht jeder Abschnitt ist immer nötig - aber wo eine Entscheidung schon
-feststeht, gehört sie unter "Entscheidungen" statt offen zu bleiben (sonst
-wird sie zur Rückfrage). Siehe ISSUES.md für zwei ausgearbeitete Beispiele.
+Not every section is always needed - but where a decision has already been
+made, it belongs under "Decisions" instead of staying open (otherwise it
+becomes a follow-up question). See ISSUES.md for two worked examples.
 -->
 
-## Ziel
+## Goal
 
-Der Druckertreiber CloudWeb soll inclusive des http-servers auf windows portiert werden. 
-Alle Features des Treibers werden übernommen.
-Der http-server wird als service (Windows-Dienst) umgesetzt.
-Es gibt ein Installationsscript, um den Treiber wie auch den Dienst zu installieren sowie den Dienst zu starten.
-Auch die Funktionalität share-to-web.sh wird in dieser oder einer ähnlichen Form angeboten. Wenn möglich eine Integration in den Filebrowser als ein sendto Option. Parameter "Name" muss jetzt abgefragt werden.
-Es wird ein File wie aktuell backend.env angelegt und eingelesen.
+The CloudWeb printer driver, including the http server, should be ported
+to Windows. All features of the driver are carried over. The http server
+is implemented as a service (Windows service). There's an installation
+script to install both the driver and the service, and to start the
+service. The share-to-web.sh functionality is also offered in this or a
+similar form. If possible, integration into the file browser as a SendTo
+option. The "Name" parameter now has to be prompted for. A file like the
+current backend.env is created and read in.
 
-### Zusammenfassung:
+### Summary:
 - backend
-- cloudweb-Treiber
-- fileshare (wie share-to-web)
-- Installation vom Druckertreiber + Service über Powershell mit Admin-Rechten.
-- beim SentTo (share-to-web) wird ein Name abgefragt, leer bedeutet kein Password.
-- Dienstinstallation und er Betrieb soll über Get-Service, Start-Service, New-Service erfolgen
+- cloudweb driver
+- fileshare (like share-to-web)
+- Installation of the printer driver + service via PowerShell with admin rights.
+- On SendTo (share-to-web), a name is prompted for; empty means no password.
+- Service installation and operation should work via Get-Service, Start-Service, New-Service
 
-<!-- Ein Satz: wozu soll das gut sein (nicht nur was soll gebaut werden). -->
+<!-- One sentence: what is this good for (not just what should be built). -->
 
-## Akzeptanzkriterien
+## Acceptance Criteria
 
-- der Druckertreiber erscheint tatsächlich als auswählbarer Drucker.
-- der http-server ist aktiv und liefert eine Ausgabe
-- die Ausgabe vom Druckertreiber liefert an http://localhost:40080/ im Druckfall
-  (localhost ist jetzt ein anderer rechner) 
-  den QR-Code, den Link (Text) und zuletzt aktuallisiert, 
-- Bei der Ausgabe von Files über die Sendto-Funktion 
-  den QR-Code, den Link (Text), den crypt und zuletzt aktuallisiert.
-- Druckertreiber und Sento-Funktion schreiben wie bei der Linux Variante auf das gleiche Ziel: 
-  http://localhost:40080/
+- The printer driver actually appears as a selectable printer.
+- The http server is active and delivers output
+- The printer driver's output delivers to http://localhost:40080/ on
+  printing (localhost is now a different machine)
+  the QR code, the link (text), and last updated,
+- When outputting files via the SendTo function,
+  the QR code, the link (text), the crypt, and last updated.
+- The printer driver and SendTo function write to the same target as in
+  the Linux variant: http://localhost:40080/
 
-**Alle Kriterien live in der Windows-10-VM verifiziert** (2026-09-16):
-- Drucker "CloudWeb" erscheint auswählbar, Original "Microsoft Print to PDF"
-  bleibt unverändert daneben bestehen.
-- `cloudweb.exe` läuft als installierter Windows-Dienst (`Start-Service
-  CloudWeb`, per `New-Service` angelegt) und verarbeitet Druckaufträge
-  (Ordner-Watcher auf `incoming.pdf`) genauso wie im interaktiven Testlauf.
-- Druck über "CloudWeb" erzeugt automatisch QR-Code + Link auf
-  `http://localhost:40080/`, ohne manuelles Zutun.
-- `fileshare.exe` (Explorer "Senden an") lädt eine ausgewählte Datei hoch,
-  fragt den optionalen Namen ab, erzeugt bei nicht-leerem Namen zusätzlich
-  eine Passwort-Kurzform (crypt) und pusht beides auf dieselbe Anzeigeseite -
-  wie vom Drucker.
+**All criteria verified live in the Windows 10 VM** (2026-09-16):
+- Printer "CloudWeb" appears selectable, original "Microsoft Print to PDF"
+  remains unchanged alongside it.
+- `cloudweb.exe` runs as an installed Windows service (`Start-Service
+  CloudWeb`, created via `New-Service`) and processes print jobs (folder
+  watcher on `incoming.pdf`) exactly like in the interactive test run.
+- Printing via "CloudWeb" automatically generates a QR code + link at
+  `http://localhost:40080/`, with no manual action needed.
+- `fileshare.exe` (Explorer "Send to") uploads a selected file, asks for
+  the optional name, additionally generates a password short form (crypt)
+  for a non-empty name, and pushes both to the same display page - just
+  like the printer.
 
 <!--
-Konkret, nach Möglichkeit als "Gegeben ... wenn ... dann ...".
-Wo ein Wert exakt berechnet werden soll: Beispiel-Ein-/Ausgabe als Code
-statt Prosa, z. B.:
+Concrete, ideally as "Given ... when ... then ...".
+Where a value should be computed exactly: example input/output as code
+instead of prose, e.g.:
 
     hashlib.sha256(b"password") -> base64.b32encode(...)[:16] == "L2EERGG2FACHCUOQ"
 
-- Gegeben ..., wenn ..., dann ...
+- Given ..., when ..., then ...
 -->
 
 
-## Entscheidungen
+## Decisions
 
-Wie im Original sollte möglichst viel Code wiederverwendet werden. Als Programmiersprache für neue Komponenten go verwenden.
+As in the original, as much code as possible should be reused. Use Go as the programming language for new components.
 
-- Dienstfähigkeit von `cloudweb`: über `golang.org/x/sys/windows/svc` (offizielles,
-  schlankes Go-Paket für den Windows-Service-Control-Manager-Handshake) direkt im
-  Binary - keine andere Sprache, kein externer Wrapper wie NSSM nötig. Damit
-  funktionieren `New-Service`/`Start-Service`/`Get-Service` wie vorgesehen.
-  **Implementiert** in `cmd/cloudweb/service_windows.go`
-  (`cmd/cloudweb/service_other.go` hält das Linux/macOS-Verhalten
-  unverändert); per Build-Tag getrennt, kein Einfluss auf den bestehenden
-  Linux-Build (`go build ./...` unter Linux weiterhin unverändert grün).
-  Läuft `cloudweb.exe` interaktiv (nicht als registrierter Dienst,
-  `svc.IsWindowsService()` erkennt das), startet es Server + Watcher
-  trotzdem direkt blockierend - erleichtert das Testen ohne
-  Dienst-Neuregistrierung bei jeder Änderung.
+- Service capability of `cloudweb`: via `golang.org/x/sys/windows/svc`
+  (official, lean Go package for the Windows Service Control Manager
+  handshake) directly in the binary - no other language, no external
+  wrapper like NSSM needed. This makes `New-Service`/`Start-Service`/
+  `Get-Service` work as intended.
+  **Implemented** in `cmd/cloudweb/service_windows.go`
+  (`cmd/cloudweb/service_other.go` keeps the Linux/macOS behavior
+  unchanged); separated via build tag, no impact on the existing Linux
+  build (`go build ./...` on Linux remains unchanged and green).
+  If `cloudweb.exe` runs interactively (not as a registered service,
+  `svc.IsWindowsService()` detects that), it still starts server + watcher
+  directly, blocking - makes testing easier without re-registering the
+  service on every change.
 
-- Konfigurationsdatei (Windows-Äquivalent zu `EnvironmentFile=` unter
-  systemd): `C:\ProgramData\myshare\backend.env`, KEY=VALUE-Format wie
-  unter Linux. Da `New-Service` keine Umgebungsdatei kennt, liest
-  `cloudweb.exe` sie beim Start selbst ein (`internal/envfile`, neues
-  plattformneutrales Paket mit Windows-/Linux-Default-Pfad per Build-Tag -
-  unter Linux ein No-op, dort bleibt systemd zuständig).
-  **Stolperfalle beim Testen live erlebt:** Werte in `backend.env` dürfen
-  **nicht** in Anführungszeichen stehen (`NC_PASSWORD=abc`, nicht
-  `NC_PASSWORD='abc'`) - weder `internal/envfile` noch systemds
-  `EnvironmentFile=` entfernen umschließende Quotes, die wären sonst
-  wörtlicher Bestandteil des Werts (führte zu stundenlangem
-  "Login failed", weil das eingetragene App-Passwort dadurch nie mit dem
-  tatsächlichen übereinstimmte).
+- Configuration file (Windows equivalent of `EnvironmentFile=` under
+  systemd): `C:\ProgramData\myshare\backend.env`, KEY=VALUE format like on
+  Linux. Since `New-Service` doesn't know about an environment file,
+  `cloudweb.exe` reads it in itself on startup (`internal/envfile`, new
+  platform-neutral package with a Windows/Linux default path via build
+  tag - a no-op on Linux, where systemd remains responsible).
+  **Pitfall experienced live while testing:** Values in `backend.env` must
+  **not** be in quotes (`NC_PASSWORD=abc`, not `NC_PASSWORD='abc'`) -
+  neither `internal/envfile` nor systemd's `EnvironmentFile=` strip
+  surrounding quotes, they'd otherwise become a literal part of the value
+  (caused hours of "Login failed", because the entered app password never
+  matched the actual one as a result).
 
-- Druckertreiber-Mechanismus: **zweiter, eigener Drucker mit dem vorhandenen
-  Inbox-Treiber "Microsoft Print To PDF"** - der originale Drucker "Microsoft
-  Print to PDF" bleibt unverändert (anderer Name, eigener Port, keine
-  Registry-/Treiber-Änderung an ihm). **Live in der Windows-10-VM
-  verifiziert** (2026-09-16): Druck über den neuen Drucker "CloudWeb" erzeugt
-  ohne jeden Dialog `C:\ProgramData\myshare\incoming.pdf`;
-  `Get-Printer` zeigt anschließend weiterhin unverändert "Microsoft Print to
-  PDF" (`PORTPROMPT:`) parallel zu "CloudWeb" (fixer Datei-Port).
-  - Der Original-Drucker nutzt den Spezial-Port `PORTPROMPT:`, der bei jedem
-    Druck den "Speichern unter"-Dialog öffnet - deshalb kann/darf er nicht
-    wiederverwendet werden.
-  - Stattdessen wird ein **lokaler Datei-Port mit fixem Pfad** angelegt, z. B.
-    `C:\ProgramData\myshare\incoming.pdf` (lokale Ports werden unter
-    Windows direkt über ihren Dateipfad als Portname identifiziert - kein
-    Portmonitor-Code nötig). Der Spooler schreibt bei jedem Druckauftrag
-    kommentarlos in genau diese Datei, ganz ohne Dialog.
-  - Neuer Drucker (Name **"CloudWeb"**, analog zur Linux-Warteschlange) wird
-    mit demselben Inbox-Treiber an diesen Port gebunden, z. B.:
+- Printer driver mechanism: **a second, separate printer using the
+  existing inbox driver "Microsoft Print To PDF"** - the original
+  "Microsoft Print to PDF" printer remains unchanged (different name, own
+  port, no registry/driver change to it). **Verified live in the Windows
+  10 VM** (2026-09-16): printing via the new "CloudWeb" printer produces
+  `C:\ProgramData\myshare\incoming.pdf` with no dialog at all;
+  `Get-Printer` afterwards still shows "Microsoft Print to PDF"
+  (`PORTPROMPT:`) unchanged, alongside "CloudWeb" (fixed file port).
+  - The original printer uses the special port `PORTPROMPT:`, which opens
+    the "save as" dialog on every print - that's why it can't/shouldn't be
+    reused.
+  - Instead, a **local file port with a fixed path** is created, e.g.
+    `C:\ProgramData\myshare\incoming.pdf` (local ports on Windows are
+    identified directly by their file path as the port name - no port
+    monitor code needed). The spooler writes to exactly this file on
+    every print job, silently, with no dialog at all.
+  - A new printer (name **"CloudWeb"**, analogous to the Linux queue) is
+    bound to this port using the same inbox driver, e.g.:
     ```powershell
     Add-PrinterPort -Name "C:\ProgramData\myshare\incoming.pdf"
     Add-Printer -Name "CloudWeb" -DriverName "Microsoft Print To PDF" `
       -PortName "C:\ProgramData\myshare\incoming.pdf"
     ```
-  - Der Windows-Dienst (`cloudweb.exe`, siehe unten) enthält einen
-    Ordner-Watcher (einfaches 1s-Polling per `time.Ticker`, bewusst ohne
-    zusätzliche Abhängigkeit wie `fsnotify` - bei einer einzelnen fest
-    benannten Datei reicht das für den Anwendungsfall völlig) auf diese
-    feste Datei; bei Änderung wird sie **sofort atomar umbenannt** (auf
-    einen Zeitstempel-Dateinamen im selben Verzeichnis, `os.Rename`) und
-    danach wie beim Linux-Backend weiterverarbeitet (Upload, Freigabelink,
-    QR-Code, direktes Aktualisieren der Anzeige - kein Push per HTTP nötig,
-    da Watcher und Anzeige-Server im selben Prozess laufen). Die sofortige
-    Umbenennung verhindert, dass ein zweiter, schnell nacheinander
-    gestarteter Druckauftrag die Datei überschreibt, bevor sie verarbeitet
-    wurde. **Implementiert** in `cmd/cloudweb/watcher_windows.go`.
-  - **`cmd/backend` (das CUPS-Backend) ist unter Windows kein eigenständiges
-    Programm** - es gibt kein Windows-Äquivalent zum CUPS-Backend-Aufruf
-    (`job-id user title copies options [file]`), das Windows beim Drucken
-    automatisch ausführen würde. Seine Rolle (Upload + Freigabelink +
-    QR-Code nach einem Druckauftrag) übernimmt stattdessen direkt der
-    Ordner-Watcher in `cloudweb.exe` (siehe oben).
-  - Für `share-to-web` (SendTo mit Name-Abfrage) **kein Umweg über den
-    Drucker**: `cmd/fileshare` (neues Kommando, für Windows gedacht, baut
-    aber auf denselben plattformneutralen internen Paketen auf) lädt die
-    per Explorer ausgewählte Datei direkt selbst hoch (wie
-    `scripts/share-to-web.sh`), fragt dazu - falls nicht als zweites
-    Argument übergeben - interaktiv auf der Konsole nach dem optionalen
-    `Name`, leitet bei nicht-leerem Namen Crypt+Passwort exakt wie
-    `cmd/backend` ab (`internal/sharepassword`, MAC-Adresse + Remote-Pfad
-    als stiller zweiter Faktor) und pusht das Ergebnis anschließend per
-    `POST /push` an den laufenden Dienst `CloudWeb` - protokollkompatibel zu
-    `scripts/push-to-cloudweb.sh` (dieselben Formularfelder `file`, `link`,
-    `password`). Als Explorer-"Senden an"-Eintrag eingerichtet (siehe
+  - The Windows service (`cloudweb.exe`, see below) contains a folder
+    watcher (simple 1s polling via `time.Ticker`, deliberately without an
+    extra dependency like `fsnotify` - for a single, fixed-name file this
+    is entirely sufficient for the use case) on this fixed file; on
+    change, it's **immediately renamed atomically** (to a timestamp
+    filename in the same directory, `os.Rename`) and then processed just
+    like the Linux backend (upload, share link, QR code, directly updating
+    the display - no push via HTTP needed, since the watcher and display
+    server run in the same process). The immediate rename prevents a
+    second, quickly following print job from overwriting the file before
+    it's processed. **Implemented** in `cmd/cloudweb/watcher_windows.go`.
+  - **`cmd/backend` (the CUPS backend) is not a standalone program on
+    Windows** - there's no Windows equivalent of the CUPS backend
+    invocation (`job-id user title copies options [file]`) that Windows
+    would automatically run on printing. Its role (upload + share link +
+    QR code after a print job) is instead taken over directly by the
+    folder watcher in `cloudweb.exe` (see above).
+  - For `share-to-web` (SendTo with a name prompt), **no detour via the
+    printer**: `cmd/fileshare` (new command, meant for Windows, but built
+    on the same platform-neutral internal packages) uploads the file
+    selected via Explorer directly itself (like `scripts/share-to-web.sh`),
+    asking - if not passed as a second argument - interactively on the
+    console for the optional `Name`, deriving crypt+password for a
+    non-empty name exactly like `cmd/backend` does
+    (`internal/sharepassword`, MAC address + remote path as a silent
+    second factor), and then pushing the result via `POST /push` to the
+    running `CloudWeb` service - protocol-compatible with
+    `scripts/push-to-cloudweb.sh` (the same form fields `file`, `link`,
+    `password`). Set up as an Explorer "Send to" entry (see
     `deploy/windows/install.ps1`).
 
 <!--
-Dinge, die schon feststehen: Sprache, welche Komponente etwas übernimmt,
-welches Feld/welcher Parameter wofür genutzt wird, Sicherheitsmodell, etc.
+Things that are already settled: language, which component takes on what,
+which field/parameter is used for what, security model, etc.
 -->
 
-## Nicht-Ziele
+## Non-Goals
 
-<!-- Was bewusst NICHT verlangt ist, falls die Abgrenzung sonst unklar wäre. -->
-- Nicht verlangt ist der Druckertreiber CloudToRaspi
-- wenn der Fileshare -> CloudWeb aus dem FileBrowser funktioniert, wird kein zusätzliches script zur Ausgabe erwartet.
-- Der Windows-eigene Drucker "Microsoft Print to PDF" (Treibereintrag, Port
-  `PORTPROMPT:`, Verhalten) wird nicht verändert, entfernt oder umgewidmet -
-  er bleibt für den Nutzer unverändert wie vor der Installation nutzbar.
+<!-- What is deliberately NOT required, in case the scope would otherwise be unclear. -->
+- The CloudToRaspi printer driver is not required
+- If the fileshare -> CloudWeb functionality works from the file browser, no additional script for output is expected.
+- Windows' own "Microsoft Print to PDF" printer (driver entry, port
+  `PORTPROMPT:`, behavior) is not changed, removed, or repurposed - it
+  remains usable by the user unchanged, just as before the installation.

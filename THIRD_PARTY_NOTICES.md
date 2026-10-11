@@ -1,13 +1,12 @@
 # Third-Party Notices
 
-Dieses Projekt (lizenziert unter der GNU AGPL-3.0, siehe `LICENSE`) bindet
-folgende Bibliotheken ein, jeweils unter einer eigenen, permissiven Lizenz.
-Die Original-Lizenztexte sind hier vollständig reproduziert, wie von ihnen
-gefordert.
+This project (licensed under the GNU AGPL-3.0, see `LICENSE`) bundles the
+following libraries, each under its own permissive license. The original
+license texts are reproduced here in full, as required by them.
 
 ## github.com/skip2/go-qrcode
 
-QR-Code-Erzeugung (siehe `internal/qrview`). MIT-Lizenz:
+QR code generation (see `internal/qrview`). MIT License:
 
 ```
 Copyright (c) 2014 Tom Harwood
@@ -33,8 +32,8 @@ THE SOFTWARE.
 
 ## golang.org/x/sys
 
-Windows-Service-Control-Manager-Anbindung (siehe
-`cmd/cloudweb/service_windows.go`). BSD-3-Clause-artige Lizenz:
+Windows Service Control Manager integration (see
+`cmd/cloudweb/service_windows.go`). BSD-3-Clause-style license:
 
 ```
 Copyright 2009 The Go Authors.

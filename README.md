@@ -1,51 +1,51 @@
 # myshare
 
-CUPS-Backend (in Go), das einen Druckauftrag als PDF in eine Nextcloud-Instanz
-hochlädt, einen öffentlichen, ablaufenden Freigabelink erzeugt und diesen
-(vorläufig) als Log-Zeile + QR-Code ausgibt. Daneben eigenständige Wege,
-beliebige Dateien auf demselben Weg zu teilen - vom Terminal, vom Handy
-oder über Explorer "Senden an" unter Windows (siehe unten).
+CUPS backend (in Go) that uploads a print job as a PDF to a Nextcloud
+instance, creates a public, expiring share link, and outputs it (for now)
+as a log line + QR code. Alongside that, standalone ways to share
+arbitrary files the same way - from the terminal, from a phone, or via
+Explorer "Send to" on Windows (see below).
 
-## Warum "Backend" statt "Filter"?
+## Why "Backend" instead of "Filter"?
 
-CUPS wandelt Druckdaten über eine Filterkette in ein Format um, das der
-"Drucker" versteht, und übergibt das Ergebnis dann an das Backend, das es an
-das Zielgerät sendet. Wenn man dem Drucker eine Standard-PDF-Warteschlange
-zuweist (genau wie es `cups-pdf` tut), liegt am Backend bereits ein fertiges
-PDF vor – wir müssen also keine PostScript/PCL-Interpretation selbst machen.
+CUPS converts print data through a filter chain into a format the
+"printer" understands, then hands the result to the backend, which sends
+it to the target device. If you assign the printer a standard PDF queue
+(exactly like `cups-pdf` does), the backend already receives a finished
+PDF - so we don't have to do any PostScript/PCL interpretation ourselves.
 
-## Aufbau
+## Structure
 
-| Paket | Zweck |
+| Package | Purpose |
 |-------|-------|
-| `internal/config` | Konfiguration ausschließlich über Umgebungsvariablen (R6) |
-| `internal/filenames` | Eindeutige, dateisystemsichere Dateinamen aus Titel + Zeitstempel (R3) |
-| `internal/nextcloud` | WebDAV-Upload (R4) + öffentlicher, ablaufender Freigabelink per OCS-API (R5) |
-| `internal/qrview` | QR-Code-PNG aus dem Freigabelink |
-| `internal/output` | Vorläufige Ausgabe: Link in `tmp/links.log` + QR-PNG in `tmp/` (R7) |
-| `cmd/backend` | CUPS-Backend-Einstiegspunkt |
-| `cmd/sendfile` | CLI-Einstiegspunkt für beliebige Dateien (kein Druckjob) |
-| `cmd/webshare` | HTTP-Einstiegspunkt für beliebige Dateien - z. B. vom Handy per Browser, ohne eigene Nextcloud-Zugangsdaten |
+| `internal/config` | Configuration exclusively via environment variables (R6) |
+| `internal/filenames` | Unique, filesystem-safe filenames from title + timestamp (R3) |
+| `internal/nextcloud` | WebDAV upload (R4) + public, expiring share link via OCS API (R5) |
+| `internal/qrview` | QR code PNG from the share link |
+| `internal/output` | Preliminary output: link in `tmp/links.log` + QR PNG in `tmp/` (R7) |
+| `cmd/backend` | CUPS backend entry point |
+| `cmd/sendfile` | CLI entry point for arbitrary files (not a print job) |
+| `cmd/webshare` | HTTP entry point for arbitrary files - e.g. from a phone via browser, without its own Nextcloud credentials |
 
-## Konfiguration (Umgebungsvariablen)
+## Configuration (environment variables)
 
-| Variable | Pflicht | Beschreibung |
+| Variable | Required | Description |
 |----------|---------|--------------|
-| `NC_BASE_URL` | ja | z. B. `https://cloud.example.com` |
-| `NC_USERNAME` | ja | Nextcloud-Benutzer (für Upload + Freigabe) |
-| `NC_PASSWORD` | ja | Nextcloud **App-Passwort** (nicht das Konto-Passwort!) |
-| `NC_TARGET_DIR` | nein | Zielordner, Default `/PrinterUploads` |
-| `NC_LINK_EXPIRE_DAYS` | nein | Gültigkeitsdauer des Freigabelinks in Tagen, Default `1` |
+| `NC_BASE_URL` | yes | e.g. `https://cloud.example.com` |
+| `NC_USERNAME` | yes | Nextcloud user (for upload + sharing) |
+| `NC_PASSWORD` | yes | Nextcloud **app password** (not the account password!) |
+| `NC_TARGET_DIR` | no | Target folder, default `/PrinterUploads` |
+| `NC_LINK_EXPIRE_DAYS` | no | Validity period of the share link in days, default `1` |
 
-## Bauen
+## Building
 
 ```bash
 deploy/build.sh
 ```
 
-Baut `backend`, `sendfile`, `webshare` und `cloudweb` in einem Schritt
-(vermeidet, dass `install.sh` versehentlich eine veraltete Binary
-installiert, weil eine davon vergessen wurde). Einzeln geht's auch:
+Builds `backend`, `sendfile`, `webshare`, and `cloudweb` in one step
+(avoids `install.sh` accidentally installing a stale binary because one of
+them was forgotten). Individually also works:
 
 ```bash
 go build -o backend ./cmd/backend
@@ -54,201 +54,199 @@ go build -o webshare ./cmd/webshare
 go build -o cloudweb ./cmd/cloudweb
 ```
 
-## Lokal testen
+## Testing locally
 
 ```bash
 export NC_BASE_URL=https://cloud.example.com
 export NC_USERNAME=change-cloud-user
-export NC_PASSWORD=<app-passwort>
-cat testdruck.pdf | ./backend job1 alice "Testdruck" 1 ""
+export NC_PASSWORD=<app-password>
+cat test-print.pdf | ./backend job1 alice "Test print" 1 ""
 ```
 
-## Beliebige Dateien teilen (ohne Drucker)
+## Sharing arbitrary files (without a printer)
 
-Neben dem CUPS-Backend gibt es `sendfile` für den Fall, dass man keine
-Druckdaten hat, sondern direkt eine beliebige Datei (z. B. eine ZIP) über
-denselben Weg (Nextcloud-Upload + Freigabelink + QR-Code) teilen will:
+Besides the CUPS backend, there's `sendfile` for the case where you don't
+have print data, but want to share an arbitrary file (e.g. a ZIP) directly
+via the same path (Nextcloud upload + share link + QR code):
 
 ```bash
-./sendfile pfad/zu/test.zip
-./sendfile pfad/zu/test.zip "Anderer Titel.zip"
+./sendfile path/to/test.zip
+./sendfile path/to/test.zip "Other Title.zip"
 cat test.zip | ./sendfile - test.zip
 ```
 
-Ohne Label wird der Dateiname aus dem Pfad übernommen (inkl. Endung); bei
-stdin (`-`) muss das Label die Endung liefern, sonst wird `.bin` verwendet.
-Nutzt dieselbe Konfiguration (`NC_*`-Umgebungsvariablen) wie das Backend.
+Without a label, the filename is taken from the path (incl. extension);
+with stdin (`-`), the label has to provide the extension, otherwise `.bin`
+is used. Uses the same configuration (`NC_*` environment variables) as the
+backend.
 
-## Vom Handy teilen
+## Sharing from a phone
 
-Drei Code-Pfade existieren dafür, je nach Situation unterschiedlich gut
-geeignet:
+Three code paths exist for this, each suited to different situations:
 
-| | `webshare` auf einem Server | `web/share.html` | `webshare` in Termux auf dem Handy |
+| | `webshare` on a server | `web/share.html` | `webshare` in Termux on the phone |
 |---|---|---|---|
-| Braucht einen erreichbaren Server | Ja (LAN/VPN) | Nein | Nein |
-| Abhängig von CORS-Konfiguration der Nextcloud | Nein | Ja | Nein |
+| Needs a reachable server | Yes (LAN/VPN) | No | No |
+| Depends on Nextcloud's CORS configuration | No | Yes | No |
 
-In der Praxis hat sich **`webshare` nativ in Termux kompiliert** (dritte
-Spalte) als der Weg erwiesen, der ohne erreichbaren Server und ohne
-CORS-Voraussetzungen an die Nextcloud-Instanz auskommt - **siehe
-[`doc/android.md`](doc/android.md) für die vollständige Anleitung.**
+In practice, **`webshare` compiled natively in Termux** (third column) has
+proven to be the way that works without a reachable server and without
+CORS requirements on the Nextcloud instance - **see
+[`doc/android.md`](doc/android.md) for the full guide.**
 
-Die beiden anderen Code-Pfade bleiben im Repo (andere Konstellationen -
-z. B. ein tatsächlich erreichbarer Server, oder eine Nextcloud mit
-CORS-Unterstützung - können sie sinnvoll machen), sind aber nicht weiter
-in dieser README beschrieben: `cmd/webshare/main.go` (HTTP-Server-Variante)
-bzw. `web/share.html` + `deploy/gen-share-page.sh` (rein clientseitige
-Variante) sind selbsterklärend kommentiert.
+The other two code paths remain in the repo (other situations - e.g. an
+actually reachable server, or a Nextcloud with CORS support - can make
+them worthwhile), but aren't described further in this README:
+`cmd/webshare/main.go` (HTTP server variant) and `web/share.html` +
+`deploy/gen-share-page.sh` (purely client-side variant) are self-explanatorily
+commented.
 
-## Einbindung in CUPS
+## Integration into CUPS
 
-Alle Bausteine liegen in `deploy/`:
+All the building blocks live in `deploy/`:
 
-| Datei | Zweck |
+| File | Purpose |
 |-------|-------|
-| `deploy/install.sh` | Installiert Binary + Wrapper + PPD, legt die Warteschlangen an (idempotent) |
-| `deploy/nextcloud-backend-wrapper.sh` | Landet als `/usr/lib/cups/backend/nextcloud`; lädt `NC_*`-Env-Vars nach (CUPS startet Backends mit minimaler Umgebung) und wählt den Anzeige-Hook anhand der Warteschlange |
-| `deploy/backend.env.example` | Vorlage für `/etc/myshare/backend.env` (Zugangsdaten, `chmod 600 root:root`) |
-| `deploy/cloudpdf.ppd` | PPD für eine generische PDF-Passthrough-Warteschlange (Technik wie bei `cups-pdf`: `cupsFilter2` erklärt `application/pdf` zum Endformat, CUPS stoppt die Filterkette dort, statt zu rastern) - von beiden Warteschlangen gemeinsam genutzt |
-| `deploy/webshare.service` | systemd-Unit für `webshare` (siehe Abschnitt "Vom Handy teilen"), wird von `install.sh` mit installiert falls `webshare` gebaut wurde |
-| `deploy/cloudweb.service` | systemd-Unit für `cloudweb` (siehe Abschnitt "Ausgabe auf einem externen Display"), wird von `install.sh` mit installiert falls `cloudweb` gebaut wurde |
+| `deploy/install.sh` | Installs the binary + wrapper + PPD, sets up the queues (idempotent) |
+| `deploy/nextcloud-backend-wrapper.sh` | Ends up as `/usr/lib/cups/backend/nextcloud`; reloads `NC_*` env vars (CUPS starts backends with a minimal environment) and chooses the display hook based on the queue |
+| `deploy/backend.env.example` | Template for `/etc/myshare/backend.env` (credentials, `chmod 600 root:root`) |
+| `deploy/cloudpdf.ppd` | PPD for a generic PDF passthrough queue (same technique as `cups-pdf`: `cupsFilter2` declares `application/pdf` as the final format, CUPS stops the filter chain there instead of rasterizing) - shared by both queues |
+| `deploy/webshare.service` | systemd unit for `webshare` (see section "Sharing from a phone"), installed by `install.sh` if `webshare` was built |
+| `deploy/cloudweb.service` | systemd unit for `cloudweb` (see section "Output on an external display"), installed by `install.sh` if `cloudweb` was built |
 
-`install.sh` legt **zwei** CUPS-Warteschlangen an, die denselben
-Backend-Code nutzen - einzig der Warteschlangen-Name (von CUPS als `$PRINTER`
-an den Wrapper übergeben) entscheidet, welcher Anzeige-Hook automatisch
-läuft:
+`install.sh` sets up **two** CUPS queues that use the same backend code -
+only the queue name (passed by CUPS to the wrapper as `$PRINTER`) decides
+which display hook runs automatically:
 
-| Warteschlange | Anzeige-Ziel |
+| Queue | Display target |
 |---|---|
-| `CloudToRaspi` | Raspberry-Pi-Framebuffer (`raspi/scripts/toraspi.sh`) |
-| `CloudWeb` | `cloudweb`-Web-Anzeige (`scripts/push-to-cloudweb.sh`) |
+| `CloudToRaspi` | Raspberry Pi framebuffer (`raspi/scripts/toraspi.sh`) |
+| `CloudWeb` | `cloudweb` web display (`scripts/push-to-cloudweb.sh`) |
 
 Installation:
 
 ```bash
 deploy/build.sh
 sudo ./deploy/install.sh
-# ggf. Zugangsdaten nachtragen:
+# fill in credentials if not done yet:
 sudo "$EDITOR" /etc/myshare/backend.env
 sudo systemctl restart cups
 
-lp -d CloudToRaspi testdruck.pdf
-lp -d CloudWeb testdruck.pdf
+lp -d CloudToRaspi test-print.pdf
+lp -d CloudWeb test-print.pdf
 tail -f /var/lib/myshare/tmp/links.log
 ```
 
-`install.sh` legt außerdem `/usr/lib/cups/backend/nextcloud` mit `chmod 700 root:root`
-an – nur mit dieser Kombination führt `cupsd` das Backend als root aus (siehe
-`man backend`); mit laxeren Rechten läuft es als unprivilegierter Nutzer (i. d. R. `lp`).
+`install.sh` also sets up `/usr/lib/cups/backend/nextcloud` with
+`chmod 700 root:root` - only with this combination does `cupsd` run the
+backend as root (see `man backend`); with laxer permissions it runs as an
+unprivileged user (usually `lp`).
 
-Ohne Argumente aufgerufen (z. B. durch `lpinfo -v` zur Geräteerkennung) meldet
-sich das Backend mit einer CUPS-konformen Discovery-Zeile statt eines Fehlers.
+Called without arguments (e.g. by `lpinfo -v` for device discovery), the
+backend responds with a CUPS-compliant discovery line instead of an error.
 
-Erneuter Build + `sudo ./deploy/install.sh` genügt für Updates (Binary wird
-überschrieben, bestehende Env-Datei bleibt erhalten). Eine frühere
-Einzel-Warteschlange namens `CloudPDF` wird beim ersten Lauf automatisch
-entfernt und durch die beiden obigen ersetzt.
+Rebuilding + `sudo ./deploy/install.sh` is enough for updates (the binary
+is overwritten, the existing env file is preserved). An earlier single
+queue named `CloudPDF` is automatically removed on the first run and
+replaced by the two queues above.
 
-### Beliebige Dateien teilen über die CUPS-Warteschlange (`scripts/share.sh`)
+### Sharing arbitrary files via the CUPS queue (`scripts/share.sh`)
 
-Ist die CUPS-Warteschlange einmal eingerichtet, kann `scripts/share.sh` als
-schlanke Alternative zu `sendfile` dienen: gleicher Aufruf, aber ohne dass
-der aufrufende Nutzer selbst an die Nextcloud-Zugangsdaten kommen muss -
-die liegen ausschließlich beim CUPS-Backend (`/etc/myshare/backend.env`),
-`lp` reicht die Datei einfach durch:
+Once the CUPS queue is set up, `scripts/share.sh` can serve as a lean
+alternative to `sendfile`: same invocation, but without the calling user
+needing access to the Nextcloud credentials themselves - those live
+exclusively with the CUPS backend (`/etc/myshare/backend.env`), `lp` just
+passes the file through:
 
 ```bash
-scripts/share.sh pfad/zu/test.zip
-scripts/share.sh pfad/zu/test.zip "Anderer Titel.zip"
+scripts/share.sh path/to/test.zip
+scripts/share.sh path/to/test.zip "Other Title.zip"
 cat test.zip | scripts/share.sh - test.zip
 ```
 
-Intern nur ein Wrapper um `lp -d $PRINTER -t <titel> [datei]` (Default für
-`$PRINTER`: `CloudToRaspi`, per Umgebungsvariable `PRINTER=CloudWeb
-scripts/share.sh ...` umschaltbar). Funktioniert nur auf Rechnern mit
-eingerichteter Warteschlange (s. o.) - `sendfile` bleibt deshalb die
-unabhängige Variante (kein CUPS nötig), z. B. als Grundlage für `webshare`
-und `web/share.html`.
+Internally just a wrapper around `lp -d $PRINTER -t <title> [file]`
+(default for `$PRINTER`: `CloudToRaspi`, switchable via the environment
+variable `PRINTER=CloudWeb scripts/share.sh ...`). Only works on machines
+with a configured queue (see above) - `sendfile` therefore remains the
+independent variant (no CUPS needed), e.g. as the basis for `webshare` and
+`web/share.html`.
 
-`scripts/share-to-web.sh` ist dieselbe Kurzform mit `PRINTER=CloudWeb` fest
-voreingestellt (Ergebnis erscheint im Browser statt auf dem Pi). Ihr
-zweiter Parameter ist - anders als bei `share.sh` - **kein Titel**,
-sondern ein optionaler Name, der als Grundlage für ein zusätzliches
-Freigabe-Passwort dient (`-o nc-password-seed=<name>`, siehe
-`internal/sharepassword`):
+`scripts/share-to-web.sh` is the same shorthand with `PRINTER=CloudWeb`
+permanently preset (result appears in the browser instead of on the Pi).
+Its second parameter is - unlike with `share.sh` - **not a title**, but an
+optional name that serves as the basis for an additional share password
+(`-o nc-password-seed=<name>`, see `internal/sharepassword`):
 
 ```bash
-scripts/share-to-web.sh pfad/zu/test.zip           # ohne Passwortschutz
-scripts/share-to-web.sh pfad/zu/test.zip Nachname  # mit Passwortschutz
+scripts/share-to-web.sh path/to/test.zip      # without password protection
+scripts/share-to-web.sh path/to/test.zip Name # with password protection
 ```
 
-Ohne `name`-Argument bleibt die Freigabe wie bei `share.sh` unpassphrasegeschützt.
+Without a `name` argument, the share remains unprotected by a passphrase,
+just like with `share.sh`.
 
-## Ausgabe auf einem externen Display (optional)
+## Output on an external display (optional)
 
-Nach jedem erfolgreichen Lauf (Backend **und** `sendfile`/`webshare`, da
-alle dieselbe `internal/output.Default` nutzen) kann zusätzlich ein
-externes Skript aufgerufen werden - z. B. um den QR-Code auf einem
-angeschlossenen Display auszugeben. Der Hook wird als
-`<hook> <qr-png-pfad> <link>` aufgerufen, ein Fehlschlag lässt den Druckjob
-nicht scheitern.
+After every successful run (backend **and** `sendfile`/`webshare`, since
+they all use the same `internal/output.Default`), an external script can
+additionally be called - e.g. to display the QR code on an attached
+display. The hook is called as `<hook> <qr-png-path> <link>`, a failure
+doesn't make the print job fail.
 
-Für die beiden CUPS-Warteschlangen (`CloudToRaspi`/`CloudWeb`, siehe
-"Einbindung in CUPS") entscheidet allein der gedruckte Warteschlangen-Name,
-welcher Hook läuft - `deploy/nextcloud-backend-wrapper.sh` setzt ihn
-automatisch. `MYSHARE_DISPLAY_HOOK=<pfad>` in `backend.env` bleibt
-der Weg dafür bei `sendfile`/`webshare` (dort gibt es keine Warteschlange)
-sowie als Fallback für andere/zukünftige Warteschlangen.
+For the two CUPS queues (`CloudToRaspi`/`CloudWeb`, see "Integration into
+CUPS"), the printed queue name alone decides which hook runs -
+`deploy/nextcloud-backend-wrapper.sh` sets it automatically.
+`MYSHARE_DISPLAY_HOOK=<path>` in `backend.env` remains the way to do this
+for `sendfile`/`webshare` (there's no queue there) as well as a fallback
+for other/future queues.
 
-Mitgeliefert ist `raspi/scripts/toraspi.sh` für die Ausgabe auf einem
-Raspberry-Pi-Display (Warteschlange `CloudToRaspi`):
+Included is `raspi/scripts/toraspi.sh` for output on a Raspberry Pi
+display (queue `CloudToRaspi`):
 
-| Verzeichnis | Läuft auf | Zweck |
+| Directory | Runs on | Purpose |
 |-------------|-----------|-------|
-| `raspi/scripts/toraspi.sh` | diesem Rechner (als Hook) | Komponiert QR-Code + Link-Text per ImageMagick, schickt das Ergebnis per `ssh` an den Pi |
-| `raspi/bin/pipetodisp.sh` | Raspberry Pi | Nimmt das Bild per stdin entgegen, legt es im Watch-Verzeichnis ab |
-| `raspi/bin/fb-image-watcher.sh` + `raspi/services/fb-image-watcher.service` | Raspberry Pi | systemd-Service, zeigt neue Bilder zeitbegrenzt auf dem Framebuffer an |
+| `raspi/scripts/toraspi.sh` | this machine (as a hook) | Composes QR code + link text via ImageMagick, sends the result to the Pi via `ssh` |
+| `raspi/bin/pipetodisp.sh` | Raspberry Pi | Receives the image via stdin, drops it into the watch directory |
+| `raspi/bin/fb-image-watcher.sh` + `raspi/services/fb-image-watcher.service` | Raspberry Pi | systemd service, shows new images on the framebuffer for a limited time |
 
-`deploy/install.sh` installiert `toraspi.sh` (falls vorhanden) automatisch
-nach `/usr/local/lib/myshare/toraspi.sh`; Aktivierung + Host/Timeout
-über `MYSHARE_DISPLAY_HOOK`, `RASPI_HOST`, `RASPI_DISPLAY_TIMEOUT` in
-`backend.env` (Vorlage in `deploy/backend.env.example`). Voraussetzung:
-`convert` (ImageMagick) sowie ein passwortloser SSH-Zugang von root (CUPS
-führt das Backend als root aus) zum Pi.
+`deploy/install.sh` automatically installs `toraspi.sh` (if present) to
+`/usr/local/lib/myshare/toraspi.sh`; activation + host/timeout via
+`MYSHARE_DISPLAY_HOOK`, `RASPI_HOST`, `RASPI_DISPLAY_TIMEOUT` in
+`backend.env` (template in `deploy/backend.env.example`). Requires:
+`convert` (ImageMagick) as well as passwordless SSH access from root (CUPS
+runs the backend as root) to the Pi.
 
-### Alternative: QR-Anzeige im Browser statt Pi-Display (`cmd/cloudweb`, Warteschlange `CloudWeb`)
+### Alternative: QR display in the browser instead of the Pi display (`cmd/cloudweb`, queue `CloudWeb`)
 
-Braucht kein zusätzliches Gerät: `cloudweb` ist ein kleiner, eigenständiger
-Web-Server (kein Nextcloud-Zugriff, keine Zugangsdaten nötig), der den
-zuletzt gepushten QR-Code + Link (+ optional Passwort) anzeigt und dabei
-per Polling (1×/Sekunde) automatisch aktuell bleibt - einfach in einem
-Browser offen lassen. Das kann irgendein Gerät im LAN sein, insbesondere
-auch ein Handy: es lädt dabei nichts hoch und braucht keine
-Zugangsdaten, reiner Betrachter.
+Needs no additional device: `cloudweb` is a small, standalone web server
+(no Nextcloud access, no credentials needed) that displays the most
+recently pushed QR code + link (+ optional password) and keeps itself
+automatically up to date via polling (1x/second) - just leave it open in a
+browser. That can be any device on the LAN, in particular also a phone: it
+doesn't upload anything and needs no credentials, a pure viewer.
 
 ```bash
 go build -o cloudweb ./cmd/cloudweb
 ./cloudweb
-# -> http://<diese-maschine>:40080/ im Browser offen lassen (z. B. auf dem Handy)
+# -> leave http://<this-machine>:40080/ open in a browser (e.g. on a phone)
 ```
 
-Über die Warteschlange `CloudWeb` drucken, um Ergebnisse dorthin zu
-schicken (statt `CloudToRaspi` für den Pi) - `MYSHARE_DISPLAY_HOOK`
-wird für diese Warteschlange automatisch gesetzt, siehe oben. Für
-`sendfile`/`webshare` stattdessen von Hand in `backend.env`:
+Print via the `CloudWeb` queue to send results there (instead of
+`CloudToRaspi` for the Pi) - `MYSHARE_DISPLAY_HOOK` is set automatically
+for this queue, see above. For `sendfile`/`webshare`, instead set it by
+hand in `backend.env`:
 
 ```
 MYSHARE_DISPLAY_HOOK=/usr/local/lib/myshare/push-to-cloudweb.sh
 CLOUDWEB_URL=http://127.0.0.1:40080
 ```
 
-Der Push-Endpunkt (`POST /push`) nimmt nur Anfragen von `localhost` an -
-der Hook läuft ja auf demselben Host wie `cloudweb` selbst; die
-Anzeigeseite bleibt normal im Netz erreichbar. `deploy/install.sh`
-installiert `cloudweb` (falls gebaut) automatisch als systemd-Service
-`myshare-cloudweb` (läuft mit `DynamicUser=yes`, braucht anders als
-`backend`/`webshare` keine Sonderrechte) sowie das Hook-Skript nach
+The push endpoint (`POST /push`) only accepts requests from `localhost` -
+the hook runs on the same host as `cloudweb` itself after all; the display
+page remains normally reachable on the network. `deploy/install.sh`
+automatically installs `cloudweb` (if built) as the systemd service
+`myshare-cloudweb` (runs with `DynamicUser=yes`, needs no special
+privileges unlike `backend`/`webshare`), as well as the hook script, to
 `/usr/local/lib/myshare/push-to-cloudweb.sh`.
 
 ## Tests
@@ -257,64 +255,62 @@ installiert `cloudweb` (falls gebaut) automatisch als systemd-Service
 go test ./...
 ```
 
-Siehe `REQUIREMENTS.md` für die Zuordnung Requirement → Test.
+See `REQUIREMENTS.md` for the requirement → test mapping.
 
 ## Windows
 
-Siehe `doc/anforderung_windows.md` für Ziel/Entscheidungen (Druckertreiber
-als zweiter, eigener Drucker auf dem Inbox-Treiber "Microsoft Print To PDF",
-`cloudweb` als Windows-Dienst mit eingebautem Ordner-Watcher, `fileshare`
-als Explorer-"Senden an"-Werkzeug).
+See `doc/anforderung_windows.md` for goal/decisions (printer driver as a
+second, separate printer on the "Microsoft Print To PDF" inbox driver,
+`cloudweb` as a Windows service with a built-in folder watcher, `fileshare`
+as an Explorer "Send to" tool).
 
-Gebaut wird per Cross-Compile - kein Windows-Rechner zum Bauen nötig,
-reines Go ohne cgo:
+Built via cross-compile - no Windows machine needed to build, pure Go
+without cgo:
 
 ```bash
 deploy/windows/build.sh
 ```
 
-Landet in `dist/windows/` (`cloudweb.exe`, `fileshare.exe`, `install.ps1`,
+Lands in `dist/windows/` (`cloudweb.exe`, `fileshare.exe`, `install.ps1`,
 `userinstall.ps1`, `backend.env.example`, `HowToInstall.txt`) - plus
-gepackt als `cloudweb.zip`, praktisch für den Download auf den
-Windows-Rechner (einzelne `.exe`-Downloads lösen sonst jedes Mal eine
-SmartScreen-Warnung aus). Ausführliche Schritt-für-Schritt-Anleitung liegt
-als `HowToInstall.txt` im ZIP; kurz zusammengefasst:
+packaged as `cloudweb.zip`, handy for downloading onto the Windows
+machine (individual `.exe` downloads otherwise trigger a SmartScreen
+warning every time). A detailed step-by-step guide is included as
+`HowToInstall.txt` in the ZIP; briefly summarized:
 
-In einer **Administrator**-PowerShell (Drucker + Dienst, braucht erhöhte
-Rechte):
+In an **Administrator** PowerShell (printer + service, needs elevated
+rights):
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 .\install.ps1
 ```
 
-Danach in einer **normalen** PowerShell (bewusst nicht elevated - eine
-elevierte Shell kann unter einem anderen Benutzerprofil laufen als der
-spätere "Senden an"-Nutzer):
+Then in a **normal** PowerShell (deliberately not elevated - an elevated
+shell may run under a different user profile than the later "Send to"
+user):
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 .\userinstall.ps1
 ```
 
-richtet den Explorer-"Senden an"-Eintrag "CloudWeb Share" ein.
+sets up the Explorer "Send to" entry "CloudWeb Share".
 
-Danach `C:\ProgramData\myshare\backend.env` mit den echten
-Nextcloud-Zugangsdaten füllen (Werte **ohne** Anführungszeichen - weder
-`internal/envfile` noch systemds `EnvironmentFile=` unter Linux entfernen
-sie, sie wären sonst wörtlicher Bestandteil des Werts) und
-`Restart-Service CloudWeb`.
+Then fill in `C:\ProgramData\myshare\backend.env` with the real Nextcloud
+credentials (values **without** quotes - neither `internal/envfile` nor
+systemd's `EnvironmentFile=` on Linux strip them, they'd otherwise become
+a literal part of the value) and `Restart-Service CloudWeb`.
 
-## Lizenz
+## License
 
-GNU Affero General Public License v3.0 (or later) - siehe [`LICENSE`](LICENSE).
+GNU Affero General Public License v3.0 (or later) - see [`LICENSE`](LICENSE).
 
-Insbesondere für `cmd/cloudweb` und `cmd/webshare` relevant: wer eine
-veränderte Version dieses Projekts als Netzwerkdienst betreibt, mit dem
-Dritte interagieren (z. B. wer den QR-Code scannt oder vom Handy hochlädt),
-muss diesen Nutzern - anders als bei der einfachen GPL - Zugang zum
-Quellcode der laufenden Version anbieten (AGPL §13).
+Especially relevant for `cmd/cloudweb` and `cmd/webshare`: anyone running a
+modified version of this project as a network service that third parties
+interact with (e.g. whoever scans the QR code or uploads from a phone)
+must - unlike with the plain GPL - offer those users access to the source
+code of the running version (AGPL §13).
 
-Enthaltene Drittanbieter-Bibliotheken (jeweils permissiv lizenziert) sind
-in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) mit vollständigem
-Lizenztext aufgeführt.
+Third-party libraries included (each permissively licensed) are listed
+with their full license text in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

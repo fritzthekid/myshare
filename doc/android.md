@@ -1,92 +1,90 @@
-# webshare auf Android (Termux)
+# webshare on Android (Termux)
 
-`webshare` läuft nicht auf einem Server, sondern **direkt auf dem Handy
-selbst**, in [Termux](https://termux.dev/) (Terminal-Emulator mit echter
-Linux-Umgebung für Android - aus **F-Droid** installieren, nicht die
-veraltete Play-Store-Version). Da die Nextcloud-Zugriffe dabei von einem
-echten Server-Prozess ausgehen (nicht aus dem Browser), spielen weder CORS
-noch Erreichbarkeit im LAN eine Rolle - es reicht, dass das Handy Nextcloud
-erreichen kann (WLAN, mobiles Netz, überall).
+`webshare` doesn't run on a server, but **directly on the phone itself**,
+in [Termux](https://termux.dev/) (a terminal emulator with a real Linux
+environment for Android - install from **F-Droid**, not the outdated
+Play Store version). Since the Nextcloud access then originates from a
+real server process (not from the browser), neither CORS nor reachability
+on the LAN matter - it's enough for the phone to be able to reach
+Nextcloud (WiFi, mobile network, anywhere).
 
-Warum nicht `web/share.html` (rein clientseitig, kein Termux nötig)? Weil
-das voraussetzt, dass die Nextcloud-Instanz CORS für Browser-Zugriffe
-erlaubt - Standard-Setups tun das meist nicht, und ohne Admin-Zugriff auf
-den Nextcloud-/Reverse-Proxy-Server lässt sich das nicht nachrüsten (siehe
-Kommentare in `web/share.html`). Warum nicht `cmd/webshare` auf einem
-Server? Weil das einen dauerhaft erreichbaren Server im selben Netz/VPN
-voraussetzt.
+Why not `web/share.html` (purely client-side, no Termux needed)? Because
+that requires the Nextcloud instance to allow CORS for browser access -
+default setups usually don't, and without admin access to the
+Nextcloud/reverse proxy server, that can't be retrofitted (see comments in
+`web/share.html`). Why not `cmd/webshare` on a server? Because that
+requires a permanently reachable server on the same network/VPN.
 
-## Wichtige Falle: DNS
+## Important pitfall: DNS
 
-Ein von einem Linux-Rechner aus fertig cross-kompiliertes Go-Binary (egal
-ob mit `GOOS=linux` oder `GOOS=android`, jeweils `CGO_ENABLED=0`) kann
-unter Android **nicht** per DNS auflösen - Android hat kein normales
-`/etc/resolv.conf`-basiertes DNS, Go's reiner Go-Resolver versucht dann
-eine Anfrage an einen (nicht existenten) lokalen Resolver und scheitert
-mit `read: connection refused`.
+A Go binary cross-compiled from a Linux machine (regardless of whether
+`GOOS=linux` or `GOOS=android`, each with `CGO_ENABLED=0`) **cannot**
+resolve DNS on Android - Android has no normal `/etc/resolv.conf`-based
+DNS, Go's pure-Go resolver then tries a request to a (non-existent) local
+resolver and fails with `read: connection refused`.
 
-Ein `/etc/hosts`-Eintrag mit der festen IP ist **keine echte Lösung**
-(DynDNS, und/oder dieselbe IP bedient mehrere Ziele per SNI/virtuellem
-Hosting - beides bei selbst gehosteten Instanzen üblich).
+An `/etc/hosts` entry with a fixed IP is **not a real solution** (DynDNS,
+and/or the same IP serving multiple targets via SNI/virtual hosting - both
+common with self-hosted instances).
 
-Der einzige robuste Weg: **`webshare` direkt in Termux selbst
-kompilieren** - dort ist ein C-Compiler vorhanden, Go aktiviert dann
-automatisch cgo, das echte Android-DNS (Bionic) korrekt nutzt.
+The only robust way: **compile `webshare` directly in Termux itself** -
+a C compiler is available there, Go then automatically enables cgo, which
+correctly uses the real Android DNS (Bionic).
 
-## Einrichtung
+## Setup
 
-**1) Quellcode aufs Handy bringen.** Das Repo ist privat - `git clone` in
-Termux würde erst GitHub-Zugangsdaten dort brauchen. Einfacher: nur den
-nötigen Quellcode packen und per eigenem `sendfile` übertragen (dogfooding):
+**1) Get the source code onto the phone.** The repo is private - `git
+clone` in Termux would first need GitHub credentials there. Simpler: just
+package the needed source code and transfer it via your own `sendfile`
+(dogfooding):
 
 ```bash
-# auf dem Linux-Rechner:
+# on the Linux machine:
 tar czf webshare-src.tar.gz go.mod go.sum cmd/webshare internal
 sudo bash -c 'set -a; . /etc/myshare/backend.env; set +a; ./sendfile webshare-src.tar.gz webshare-src.tar.gz'
-# -> Link/QR-Code auf dem Handy öffnen, Datei landet in ~/storage/downloads/
+# -> open the link/QR code on the phone, the file lands in ~/storage/downloads/
 ```
 
-**2) In Termux entpacken und bauen:**
+**2) Extract and build in Termux:**
 
 ```bash
-termux-setup-storage                       # einmalig, Zugriff auf Downloads erlauben
+termux-setup-storage                       # once, allow access to Downloads
 cp ~/storage/downloads/webshare-src.tar.gz ~/
-tar xzf ~/webshare-src.tar.gz -C ~         # entpackt go.mod, go.sum, cmd/, internal/ nach ~
+tar xzf ~/webshare-src.tar.gz -C ~         # extracts go.mod, go.sum, cmd/, internal/ into ~
 
-pkg install golang clang -y                # einmalig, braucht etwas Zeit
+pkg install golang clang -y                # once, takes a while
 go build -o ~/webshare-native ./cmd/webshare
-file ~/webshare-native                     # sollte "dynamically linked" zeigen (cgo aktiv)
+file ~/webshare-native                     # should show "dynamically linked" (cgo active)
 ```
 
-**3) Zugangsdaten + Token** (Termux-eigene Datei, kein root/sudo nötig -
-Termux' eigener App-Speicher ist bereits durch Android von anderen Apps
-isoliert):
+**3) Credentials + token** (a file of Termux's own, no root/sudo needed -
+Termux's own app storage is already isolated from other apps by Android):
 
 ```bash
 cat > ~/webshare.env <<'ENV'
 export NC_BASE_URL=https://cloud.example.com
 export NC_USERNAME=change-cloud-user
-export NC_PASSWORD=<app-passwort>
-export WEBSHARE_TOKEN=<mit "openssl rand -hex 24" erzeugen>
+export NC_PASSWORD=<app-password>
+export WEBSHARE_TOKEN=<generate with "openssl rand -hex 24">
 export WEBSHARE_LISTEN=127.0.0.1:8642
 ENV
 chmod 600 ~/webshare.env
 ```
 
-**4) Starten** (im Vordergrund zum Testen):
+**4) Start** (in the foreground, for testing):
 
 ```bash
 source ~/webshare.env
 ~/webshare-native
-# -> im Handy-Browser: http://127.0.0.1:8642/s/<token>/
+# -> in the phone browser: http://127.0.0.1:8642/s/<token>/
 ```
 
-Live gegen eine echte Nextcloud-Instanz getestet (Upload + Freigabelink +
-QR-Code-Anzeige im Handy-Browser) - funktioniert.
+Tested live against a real Nextcloud instance (upload + share link + QR
+code display in the phone browser) - works.
 
-## Im Hintergrund laufen lassen
+## Running in the background
 
-**Einfach** (übersteht App-Wechsel, aber kein Beenden von Termux/Reboot):
+**Simple** (survives app switching, but not closing Termux/a reboot):
 
 ```bash
 termux-wake-lock
@@ -95,16 +93,16 @@ nohup ~/webshare-native > ~/webshare.log 2>&1 &
 disown
 ```
 
-Prüfen/beenden: `pgrep webshare-native`, `tail -f ~/webshare.log`,
+Check/stop: `pgrep webshare-native`, `tail -f ~/webshare.log`,
 `pkill webshare-native`, `termux-wake-unlock`.
 
-**Mit termux-services (Absturz-Neustart + Auto-Start beim nächsten
-Termux-Öffnen):**
+**With termux-services (restart on crash + auto-start the next time
+Termux is opened):**
 
 ```bash
 pkg install termux-services -y
-# Termux komplett neu starten (App schließen + neu öffnen), damit die
-# Service-Überwachung (runsvdir) aktiv wird
+# Restart Termux completely (close the app + reopen it), so the service
+# supervisor (runsvdir) becomes active
 
 mkdir -p $PREFIX/var/service/webshare
 cat > $PREFIX/var/service/webshare/run <<'RUN'
@@ -117,27 +115,27 @@ RUN
 chmod +x $PREFIX/var/service/webshare/run
 
 sv-enable webshare
-sv status webshare   # sollte "run: webshare: (pid ...) ...s" zeigen
+sv status webshare   # should show "run: webshare: (pid ...) ...s"
 ```
 
-Damit startet/überwacht `runsvdir` den Service automatisch bei jeder neuen
-Termux-Sitzung und startet ihn bei Absturz neu.
+This makes `runsvdir` automatically start/supervise the service on every
+new Termux session and restart it on a crash.
 
-**Kein echter Reboot-Automatismus möglich:** Der naheliegende Weg dafür
-wäre [Termux:Boot](https://f-droid.org/packages/com.termux.boot/) (führt
-Skripte beim Hochfahren des Handys aus) - diese App existiert aber nicht
-für jede Android-Version (bei diesem Gerät z. B. nicht verfügbar). Ohne
-Termux:Boot startet nach einem Handy-Neustart **nichts von selbst** - der
-Service läuft erst wieder, sobald Termux das nächste Mal geöffnet wird
-(dann übernimmt `runsvdir`/`sv-enable` automatisch, kein manueller
-Start-Befehl nötig). Für den gelegentlichen Einsatz reicht das meist aus;
-für "läuft dauerhaft im Hintergrund, auch ganz ohne Termux zu öffnen"
-bräuchte es eine andere Automatisierungs-App (z. B. Tasker/MacroDroid mit
-Termux:Task-Plugin) - hier nicht weiter verfolgt.
+**No real reboot automation possible:** The obvious way to do this would
+be [Termux:Boot](https://f-droid.org/packages/com.termux.boot/) (runs
+scripts on phone boot) - but this app doesn't exist for every Android
+version (not available on this device, for example). Without Termux:Boot,
+**nothing starts on its own** after a phone restart - the service only
+runs again once Termux is opened the next time (then `runsvdir`/
+`sv-enable` takes over automatically, no manual start command needed).
+For occasional use, that's usually enough; for "runs permanently in the
+background, even without ever opening Termux" you'd need a different
+automation app (e.g. Tasker/MacroDroid with the Termux:Task plugin) - not
+pursued further here.
 
-### Implementiert
+### Implemented
 
-Termux aufrufen
+Open Termux
 ~~~
 ls ~
 webshare-native
@@ -166,7 +164,6 @@ EOF
 $
 ~~~
 
-<!-- Hier eigene Notizen/Ergänzungen aus der Praxis ergänzen, z. B. ob der
-     Reboot-Test tatsächlich funktioniert hat, Akku-Optimierungs-Ausnahmen
-     die nötig waren, o. ä. -->
-
+<!-- Add your own notes/additions from practice here, e.g. whether the
+     reboot test actually worked, battery optimization exceptions that
+     were needed, etc. -->

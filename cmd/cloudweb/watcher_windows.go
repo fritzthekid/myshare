@@ -17,7 +17,7 @@ import (
 )
 
 // printPollInterval determines how quickly a print job via the file port
-// "CloudWeb" (see doc/anforderung_windows.md) is detected - a fixed second
+// "CloudWeb" (see doc/windows_requirement.md) is detected - a fixed second
 // is enough for the use case (someone prints and then looks at the
 // display page) and keeps system load minimal.
 const printPollInterval = 1 * time.Second
@@ -77,7 +77,7 @@ func checkIncoming(st *state, dir, incoming string) {
 // handlePrintedJob uploads an already-renamed, finished print file,
 // creates the share link + QR code, and updates the display (st) - without
 // password protection, that's reserved for the SendTo path (cmd/fileshare)
-// (see doc/anforderung_windows.md).
+// (see doc/windows_requirement.md).
 func handlePrintedJob(st *state, path string) {
 	defer func() {
 		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {

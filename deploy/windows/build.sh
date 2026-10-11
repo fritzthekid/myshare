@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Cross-compiles cloudweb.exe + fileshare.exe for Windows (amd64), from
 # Linux or macOS - no Windows toolchain needed, pure Go, no cgo.
-# See doc/anforderung_windows.md.
+# See doc/windows_requirement.md.
 #
 # Usage: deploy/windows/build.sh [output-directory]
 # Default output directory: dist/windows

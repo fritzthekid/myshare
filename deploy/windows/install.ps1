@@ -3,13 +3,13 @@
 .SYNOPSIS
   Installs the CloudWeb printer driver + service on Windows.
 .DESCRIPTION
-  See doc/anforderung_windows.md. Creates/idempotently updates:
+  See doc/windows_requirement.md. Creates/idempotently updates:
     - C:\ProgramData\myshare - configuration (backend.env), binaries, and
       the fixed print target (incoming.pdf).
     - Printer "CloudWeb" using the existing inbox driver "Microsoft Print
       To PDF", bound to a fixed file port instead of PORTPROMPT: - the
       original "Microsoft Print to PDF" printer remains unchanged (verified
-      live, see doc/anforderung_windows.md).
+      live, see doc/windows_requirement.md).
     - Windows service "CloudWeb" (cloudweb.exe: HTTP display + folder
       watcher on incoming.pdf), via golang.org/x/sys/windows/svc - no NSSM
       needed.

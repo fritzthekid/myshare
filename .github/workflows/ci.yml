@@ -21,7 +21,7 @@ jobs:
       - name: Test
         run: go test ./...
 
-      - name: Build (Linux-Binaries, siehe README)
+      - name: Build (Linux binaries, see README)
         run: |
           go build -o backend ./cmd/backend
           go build -o sendfile ./cmd/sendfile
@@ -29,7 +29,7 @@ jobs:
           go build -o cloudweb ./cmd/cloudweb
           go build -o fileshare ./cmd/fileshare
 
-      - name: install.sh Syntaxcheck
+      - name: install.sh syntax check
         run: |
           bash -n deploy/install.sh
           bash -n deploy/nextcloud-backend-wrapper.sh
@@ -44,7 +44,7 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Windows-Cross-Compile (siehe doc/anforderung_windows.md)
+      - name: Windows cross-compile (see doc/windows_requirement.md)
         run: ./deploy/windows/build.sh
 
       - uses: actions/upload-artifact@v4

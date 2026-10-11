@@ -259,7 +259,7 @@ See `REQUIREMENTS.md` for the requirement → test mapping.
 
 ## Windows
 
-See `doc/anforderung_windows.md` for goal/decisions (printer driver as a
+See `doc/windows_requirement.md` for goal/decisions (printer driver as a
 second, separate printer on the "Microsoft Print To PDF" inbox driver,
 `cloudweb` as a Windows service with a built-in folder watcher, `fileshare`
 as an Explorer "Send to" tool).

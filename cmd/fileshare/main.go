@@ -1,7 +1,7 @@
 // Command fileshare is the Windows equivalent of
 // scripts/share-to-web.sh + scripts/push-to-cloudweb.sh combined in one
 // program - meant for integration as an Explorer "Send to" entry (see
-// doc/anforderung_windows.md, deploy/windows/install.ps1).
+// doc/windows_requirement.md, deploy/windows/install.ps1).
 //
 // Invocation (triggered automatically by Explorer "Send to"):
 //

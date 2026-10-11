@@ -1,5 +1,5 @@
 [Unit]
-Description=myshare Web-Upload (Handy/Browser -> Nextcloud + QR)
+Description=myshare web upload (phone/browser -> Nextcloud + QR)
 After=network.target
 
 [Service]
@@ -7,10 +7,10 @@ Type=simple
 EnvironmentFile=/etc/myshare/backend.env
 ExecStart=/usr/local/lib/myshare/webshare
 Restart=on-failure
-# Läuft als root, damit es (wie das CUPS-Backend) ohne Sonderrechte-Gefummel
-# nach MYSHARE_OUTPUT_DIR schreiben und den Anzeige-Hook aufrufen kann
-# - gleiche Vertrauensebene wie der bereits als root laufende CUPS-Backend-
-# Prozess auf dieser Maschine.
+# Runs as root so it can (like the CUPS backend) write to MYSHARE_OUTPUT_DIR
+# and call the display hook without special-privilege fiddling - same
+# trust level as the CUPS backend process already running as root on this
+# machine.
 User=root
 
 [Install]

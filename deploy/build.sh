@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Baut alle Linux-Binaries an den Stellen, die deploy/install.sh erwartet -
-# ein Befehl statt "go build -o X ./cmd/X" für jedes einzeln (Quelle
-# wiederkehrender "install.sh installiert eine veraltete Binary"-Fehler).
+# Builds all Linux binaries at the locations deploy/install.sh expects -
+# one command instead of "go build -o X ./cmd/X" for each one individually
+# (source of a recurring "install.sh installs a stale binary" bug).
 #
-# Aufruf: deploy/build.sh
-# Danach: sudo ./deploy/install.sh
+# Usage: deploy/build.sh
+# Afterwards: sudo ./deploy/install.sh
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -15,4 +15,4 @@ go build -o sendfile ./cmd/sendfile
 go build -o webshare ./cmd/webshare
 go build -o cloudweb ./cmd/cloudweb
 
-echo "Fertig. Jetzt: sudo ./deploy/install.sh"
+echo "Done. Now: sudo ./deploy/install.sh"

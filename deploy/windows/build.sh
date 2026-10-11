@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Cross-compile cloudweb.exe + fileshare.exe für Windows (amd64), von Linux
-# oder macOS aus - kein Windows-Toolchain nötig, reines Go, kein cgo.
-# Siehe doc/anforderung_windows.md.
+# Cross-compiles cloudweb.exe + fileshare.exe for Windows (amd64), from
+# Linux or macOS - no Windows toolchain needed, pure Go, no cgo.
+# See doc/anforderung_windows.md.
 #
-# Aufruf: deploy/windows/build.sh [ausgabeverzeichnis]
-# Default-Ausgabeverzeichnis: dist/windows
+# Usage: deploy/windows/build.sh [output-directory]
+# Default output directory: dist/windows
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -22,8 +22,8 @@ cp deploy/windows/userinstall.ps1 "$out_dir/"
 cp deploy/windows/backend.env.example "$out_dir/"
 cp deploy/windows/HowToInstall.txt "$out_dir/"
 
-# In ein ZIP packen - Windows warnt sonst bei jeder einzeln heruntergeladenen
-# .exe per SmartScreen; als ZIP nur einmal beim Entpacken.
+# Package into a ZIP - otherwise Windows SmartScreen warns on every
+# individually downloaded .exe; as a ZIP, only once on extraction.
 rm -f "$out_dir/cloudweb.zip"
 zip -j "$out_dir/cloudweb.zip" \
     "$out_dir"/cloudweb.exe \
@@ -33,5 +33,5 @@ zip -j "$out_dir/cloudweb.zip" \
     "$out_dir"/backend.env.example \
     "$out_dir"/HowToInstall.txt
 
-echo "Fertig: $out_dir"
+echo "Done: $out_dir"
 ls -la "$out_dir"

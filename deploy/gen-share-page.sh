@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# Erzeugt aus web/share.html eine personalisierte Kopie mit fest
-# eingebackenen Nextcloud-Zugangsdaten, damit auf dem Handy keine Eingabe
-# mehr nötig ist: eine Datei aufs Handy kopieren, öffnen, fertig.
+# Generates a personalized copy of web/share.html with baked-in Nextcloud
+# credentials, so no input is needed anymore on the phone: copy one file to
+# the phone, open it, done.
 #
-# Empfehlung: dafür ein eigenes App-Passwort vergeben (Nextcloud-Weboberfläche
-# -> Einstellungen -> Sicherheit -> "Neues App-Passwort erstellen", z. B.
-# benannt "handy-share"), getrennt vom App-Passwort des CUPS-Backends -
-# unabhängig widerrufbar, falls das Handy verloren geht. Noch besser: ein
-# eigener, auf einen Ordner beschränkter Nextcloud-Benutzer statt des
-# Haupt-Accounts (wie es der bestehende "printer"-Nutzer für den
-# CUPS-Backend-Teil schon vormacht).
+# Recommendation: use a dedicated app password for this (Nextcloud web UI
+# -> Settings -> Security -> "Create new app password", e.g. named
+# "phone-share"), separate from the CUPS backend's app password -
+# independently revocable if the phone is lost. Even better: a dedicated
+# Nextcloud user restricted to one folder instead of the main account (as
+# the existing "printer" user already demonstrates for the CUPS backend
+# part).
 #
-# Aufruf:
-#   ./deploy/gen-share-page.sh /etc/myshare/backend.env > mein-handy.html
-# oder mit eigenen Werten in der Umgebung:
-#   NC_BASE_URL=... NC_USERNAME=... NC_PASSWORD=... ./deploy/gen-share-page.sh > mein-handy.html
+# Usage:
+#   ./deploy/gen-share-page.sh /etc/myshare/backend.env > my-phone.html
+# or with your own values in the environment:
+#   NC_BASE_URL=... NC_USERNAME=... NC_PASSWORD=... ./deploy/gen-share-page.sh > my-phone.html
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -22,7 +22,7 @@ TEMPLATE="$REPO_ROOT/web/share.html"
 
 if [ "${1:-}" ]; then
   if [ ! -r "$1" ]; then
-    echo "Env-Datei nicht lesbar: $1" >&2
+    echo "Env file not readable: $1" >&2
     exit 1
   fi
   set -a
@@ -31,14 +31,14 @@ if [ "${1:-}" ]; then
   set +a
 fi
 
-: "${NC_BASE_URL:?NC_BASE_URL fehlt (Env-Datei als Argument übergeben oder Variablen exportieren)}"
-: "${NC_USERNAME:?NC_USERNAME fehlt}"
-: "${NC_PASSWORD:?NC_PASSWORD fehlt}"
+: "${NC_BASE_URL:?NC_BASE_URL missing (pass an env file as an argument or export the variables)}"
+: "${NC_USERNAME:?NC_USERNAME missing}"
+: "${NC_PASSWORD:?NC_PASSWORD missing}"
 TARGET_DIR="${NC_TARGET_DIR:-/PrinterUploads}"
 EXPIRE_DAYS="${NC_LINK_EXPIRE_DAYS:-1}"
 
 if ! [[ "$EXPIRE_DAYS" =~ ^[0-9]+$ ]]; then
-  echo "NC_LINK_EXPIRE_DAYS muss eine Zahl sein, ist aber: $EXPIRE_DAYS" >&2
+  echo "NC_LINK_EXPIRE_DAYS must be a number, but is: $EXPIRE_DAYS" >&2
   exit 1
 fi
 
@@ -53,10 +53,9 @@ CONFIG_JSON=$(printf '{"baseUrl":"%s","username":"%s","password":"%s","targetDir
   "$(json_escape "$TARGET_DIR")" \
   "$EXPIRE_DAYS")
 
-# CONFIG_JSON über ENVIRON statt "awk -v" einschleusen: "-v"-Zuweisungen
-# interpretieren Backslash-Escapes (POSIX-awk-Eigenheit) und würden unser
-# gerade erzeugtes \" bzw. \\ wieder entwerten - ENVIRON-Werte bleiben
-# dagegen unverändert.
+# Inject CONFIG_JSON via ENVIRON instead of "awk -v": "-v" assignments
+# interpret backslash escapes (a POSIX awk quirk) and would undo the \" and
+# \\ we just produced - ENVIRON values, on the other hand, stay unchanged.
 MYSHARE_CFG_JSON="$CONFIG_JSON" awk '
   /<!--MYSHARE_CONFIG-->/ { print "<script>window.MYSHARE_CONFIG = " ENVIRON["MYSHARE_CFG_JSON"] ";</script>"; next }
   { print }

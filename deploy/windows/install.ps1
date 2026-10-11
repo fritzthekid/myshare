@@ -1,26 +1,26 @@
 #Requires -RunAsAdministrator
 <#
 .SYNOPSIS
-  Installiert den CloudWeb-Druckertreiber + Dienst unter Windows.
+  Installs the CloudWeb printer driver + service on Windows.
 .DESCRIPTION
-  Siehe doc/anforderung_windows.md. Legt an bzw. aktualisiert idempotent:
-    - C:\ProgramData\myshare - Konfiguration (backend.env), Binaries
-      und das feste Druckziel (incoming.pdf).
-    - Drucker "CloudWeb" mit dem vorhandenen Inbox-Treiber
-      "Microsoft Print To PDF", gebunden an einen festen Datei-Port statt
-      PORTPROMPT: - der originale Drucker "Microsoft Print to PDF" bleibt
-      dabei unverändert (live verifiziert, siehe doc/anforderung_windows.md).
-    - Windows-Dienst "CloudWeb" (cloudweb.exe: HTTP-Anzeige + Ordner-Watcher
-      auf incoming.pdf), per golang.org/x/sys/windows/svc - kein NSSM nötig.
-  Erwartet cloudweb.exe und fileshare.exe im selben Verzeichnis wie dieses
-  Skript (z. B. nach dem Kopieren von einer Build-Freigabe).
+  See doc/anforderung_windows.md. Creates/idempotently updates:
+    - C:\ProgramData\myshare - configuration (backend.env), binaries, and
+      the fixed print target (incoming.pdf).
+    - Printer "CloudWeb" using the existing inbox driver "Microsoft Print
+      To PDF", bound to a fixed file port instead of PORTPROMPT: - the
+      original "Microsoft Print to PDF" printer remains unchanged (verified
+      live, see doc/anforderung_windows.md).
+    - Windows service "CloudWeb" (cloudweb.exe: HTTP display + folder
+      watcher on incoming.pdf), via golang.org/x/sys/windows/svc - no NSSM
+      needed.
+  Expects cloudweb.exe and fileshare.exe in the same directory as this
+  script (e.g. after copying from a build artifact).
 
-  Braucht Administrator-Rechte (Drucker, Dienst). Den Explorer-"Senden
-  an"-Eintrag richtet bewusst NICHT dieses Skript ein, sondern das separate
-  userinstall.ps1 (ohne Admin-Rechte auszuführen) - eine elevierte Shell
-  läuft ggf. unter einem anderen Benutzerprofil (%APPDATA%) als der Nutzer,
-  der später tatsächlich "Senden an" benutzt; das wurde live so vorgefunden
-  (siehe GitHub-Issue #7).
+  Needs administrator rights (printer, service). The Explorer "Send to"
+  entry is deliberately NOT set up by this script, but by the separate
+  userinstall.ps1 (to be run without admin rights) - an elevated shell may
+  run under a different user profile (%APPDATA%) than the user who later
+  actually uses "Send to"; this was observed live (see GitHub issue #7).
 #>
 
 $ErrorActionPreference = "Stop"
@@ -34,28 +34,29 @@ $FileshareExe = Join-Path $DataDir "fileshare.exe"
 
 foreach ($exe in "cloudweb.exe", "fileshare.exe") {
     if (-not (Test-Path (Join-Path $ScriptDir $exe))) {
-        throw "$exe fehlt neben install.ps1 ($ScriptDir) - erst per 'GOOS=windows GOARCH=amd64 go build' erzeugen."
+        throw "$exe is missing next to install.ps1 ($ScriptDir) - build it first with 'GOOS=windows GOARCH=amd64 go build'."
     }
 }
 
 New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
 
-Write-Host "Kopiere Binaries nach $DataDir ..."
+Write-Host "Copying binaries to $DataDir ..."
 Copy-Item -Path (Join-Path $ScriptDir "cloudweb.exe") -Destination $CloudwebExe -Force
 Copy-Item -Path (Join-Path $ScriptDir "fileshare.exe") -Destination $FileshareExe -Force
 
 if (-not (Test-Path $EnvPath)) {
     Copy-Item -Path (Join-Path $ScriptDir "backend.env.example") -Destination $EnvPath
-    Write-Warning "Neue Konfigurationsdatei angelegt: $EnvPath - bitte NC_BASE_URL/NC_USERNAME/NC_PASSWORD eintragen, danach: Restart-Service CloudWeb"
+    Write-Warning "New configuration file created: $EnvPath - please fill in NC_BASE_URL/NC_USERNAME/NC_PASSWORD, then: Restart-Service CloudWeb"
 }
 
-Write-Host "Richte Drucker 'CloudWeb' ein ..."
+Write-Host "Setting up printer 'CloudWeb' ..."
 $existingPrinter = Get-Printer -Name "CloudWeb" -ErrorAction SilentlyContinue
 if ($existingPrinter -and $existingPrinter.PortName -ne $PortPath) {
-    # Zeigt noch auf einen alten Pfad (z. B. nach einer Umbenennung wie
-    # printtoqrview -> myshare) - Drucker entfernen, damit er unten sauber
-    # neu an $PortPath gebunden wird, statt still beim alten Port zu bleiben.
-    Write-Warning "Drucker 'CloudWeb' zeigte noch auf $($existingPrinter.PortName) - wird auf $PortPath umgestellt."
+    # Still points to an old path (e.g. after a rename like
+    # printtoqrview -> myshare) - remove the printer so it gets cleanly
+    # rebound to $PortPath below, instead of silently staying on the old
+    # port.
+    Write-Warning "Printer 'CloudWeb' still pointed to $($existingPrinter.PortName) - switching to $PortPath."
     Remove-Printer -Name "CloudWeb"
     $existingPrinter = $null
 }
@@ -66,7 +67,7 @@ if (-not $existingPrinter) {
     Add-Printer -Name "CloudWeb" -DriverName "Microsoft Print To PDF" -PortName $PortPath
 }
 
-Write-Host "Richte Dienst 'CloudWeb' ein ..."
+Write-Host "Setting up service 'CloudWeb' ..."
 $existing = Get-Service -Name "CloudWeb" -ErrorAction SilentlyContinue
 if ($existing) {
     Stop-Service -Name "CloudWeb" -Force -ErrorAction SilentlyContinue
@@ -77,10 +78,10 @@ New-Service -Name "CloudWeb" -BinaryPathName $CloudwebExe -DisplayName "CloudWeb
 Start-Service -Name "CloudWeb"
 
 Write-Host ""
-Write-Host "Fertig. Zur Kontrolle:"
+Write-Host "Done. To check:"
 Write-Host "  Get-Service CloudWeb"
 Write-Host "  Get-Printer | Select Name, DriverName, PortName"
 Write-Host "  http://localhost:40080/"
 Write-Host ""
-Write-Host "Noch offen: userinstall.ps1 in einer NICHT-elevierten PowerShell"
-Write-Host "ausfuehren (dein eigener Login), fuer den Explorer-'Senden an'-Eintrag."
+Write-Host "Still to do: run userinstall.ps1 in a NON-elevated PowerShell"
+Write-Host "(your own login), for the Explorer 'Send to' entry."

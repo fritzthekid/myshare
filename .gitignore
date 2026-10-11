@@ -19,7 +19,10 @@
 /cache/
 
 # Local test files
+test-print.pdf
 testdruck.pdf
 testdata.zip
+output.png
 ausgabe.png
+README.pdf
 bck/

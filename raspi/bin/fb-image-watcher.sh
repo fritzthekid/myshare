@@ -1,7 +1,7 @@
 #!/bin/bash
-# Beobachtet ein Verzeichnis auf neue Bilddateien (z.B. per scp abgelegt),
-# zeigt jede neue Datei fuer TIMEOUT Sekunden auf dem Framebuffer an und
-# loescht die Anzeige danach wieder (schwarzes Bild).
+# Watches a directory for new image files (e.g. dropped via scp), shows
+# each new file on the framebuffer for TIMEOUT seconds, then clears the
+# display again (black image).
 
 set -euo pipefail
 
@@ -12,8 +12,8 @@ BLACK_PNG="${BLACK_PNG:-$HOME/.fb-image-watcher/black.png}"
 
 mkdir -p "$WATCH_DIR" "$(dirname "$BLACK_PNG")"
 
-# Saubere Ausgangslage: verwaiste fbi-Prozesse aus einem vorherigen Lauf
-# (z.B. nach Absturz/Neustart) beenden, bevor wir neue starten.
+# Clean starting state: kill orphaned fbi processes from a previous run
+# (e.g. after a crash/restart) before starting new ones.
 pkill -x fbi 2>/dev/null || true
 
 if [ ! -f "$BLACK_PNG" ]; then
@@ -25,12 +25,12 @@ fi
 CURRENT_FILE=/tmp/fb-image-watcher/current-file
 GEN_FILE=/tmp/fb-image-watcher.pid
 
-# "setsid cmd &" liefert in $! haeufig nur die PID des kurzlebigen
-# setsid-Wrappers (der intern forkt, weil der Hintergrundjob schon
-# Prozessgruppenleiter ist) statt der PID des eigentlichen fbi-Prozesses -
-# darauf gestuetztes "kill $!" trifft also nie den echten fbi. Deshalb hier
-# stattdessen ein pauschales "pkill -x fbi" (auf diesem dedizierten
-# Display-Pi laeuft fbi ausschliesslich fuer diesen Zweck).
+# "setsid cmd &" often yields in $! only the PID of the short-lived setsid
+# wrapper (which forks internally because the background job is already a
+# process group leader) instead of the actual fbi process's PID - a "kill
+# $!" based on that would therefore never hit the real fbi. Hence a blanket
+# "pkill -x fbi" here instead (on this dedicated display Pi, fbi runs
+# exclusively for this purpose).
 clear_screen() {
     pkill -x fbi 2>/dev/null || true
     fbi -d "$FB_DEVICE" -T 1 -noverbose -once "$BLACK_PNG"
@@ -49,15 +49,15 @@ show_image() {
     echo "$token" > "$GEN_FILE"
     (
         sleep "$TIMEOUT"
-        # $GEN_FILE wird bei jedem neuen Bild überschrieben; nur löschen,
-        # wenn in der Zwischenzeit kein neueres Bild angekommen ist.
+        # $GEN_FILE gets overwritten on every new image; only clear if no
+        # newer image has arrived in the meantime.
         if [ "$(cat "$GEN_FILE" 2>/dev/null)" = "$token" ]; then
             clear_screen
         fi
     ) &
 }
 
-echo "Beobachte $WATCH_DIR (Anzeige auf $FB_DEVICE, Timeout ${TIMEOUT}s)..."
+echo "Watching $WATCH_DIR (display on $FB_DEVICE, timeout ${TIMEOUT}s)..."
 
 inotifywait -m -e close_write --format '%f' "$WATCH_DIR" | while read -r NAME; do
     FILE="$WATCH_DIR/$NAME"

@@ -1,17 +1,16 @@
 #!/bin/sh
-# Wird von cupsd als /usr/lib/cups/backend/nextcloud aufgerufen. CUPS startet
-# Backends mit einer minimalen Umgebung, deshalb müssen die NC_*-Variablen
-# aus einer root-only lesbaren Datei nachgeladen werden, bevor das
-# eigentliche (kompilierte) Backend läuft.
+# Called by cupsd as /usr/lib/cups/backend/nextcloud. CUPS starts backends
+# with a minimal environment, so the NC_* variables have to be reloaded
+# from a root-only readable file before the actual (compiled) backend runs.
 set -a
 [ -r /etc/myshare/backend.env ] && . /etc/myshare/backend.env
 set +a
 
-# CUPS setzt $PRINTER auf den Namen der Warteschlange, über die gedruckt
-# wurde - so lassen sich mehrere Warteschlangen mit demselben Backend-Code
-# fest auf unterschiedliche Anzeige-Ziele routen, statt einen einzigen
-# globalen Hook in backend.env zu teilen. Ohne Treffer greift der
-# MYSHARE_DISPLAY_HOOK-Default aus backend.env (falls gesetzt).
+# CUPS sets $PRINTER to the name of the queue the job was printed through -
+# this lets multiple queues using the same backend code be permanently
+# routed to different display targets, instead of sharing a single global
+# hook in backend.env. Without a match, the MYSHARE_DISPLAY_HOOK default
+# from backend.env applies (if set).
 case "$PRINTER" in
   CloudToRaspi)
     export MYSHARE_DISPLAY_HOOK=/usr/local/lib/myshare/toraspi.sh

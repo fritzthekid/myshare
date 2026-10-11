@@ -1,33 +1,32 @@
 #!/usr/bin/env bash
-# Ausgabe-Hook (siehe internal/output.Hook / MYSHARE_DISPLAY_HOOK):
-# wird von backend/sendfile/webshare nach jedem Erfolg als
-# "push-to-cloudweb.sh <qr-png-pfad> <link> [passwort]" aufgerufen und
-# schickt das Ergebnis per HTTP an einen lokal laufenden cloudweb-Server
-# (siehe cmd/cloudweb) statt an den Raspberry-Pi-Framebuffer
-# (raspi/scripts/toraspi.sh). Das dritte Argument (falls vorhanden) ist die
-# von cmd/backend aus "nc-password-seed=..." abgeleitete Anzeige-Kurzform
-# (crypt, siehe internal/sharepassword, scripts/share-to-web.sh) - nicht
-# das volle Freigabe-Passwort.
+# Output hook (see internal/output.Hook / MYSHARE_DISPLAY_HOOK): called by
+# backend/sendfile/webshare after every success as
+# "push-to-cloudweb.sh <qr-png-path> <link> [password]" and sends the
+# result via HTTP to a locally running cloudweb server (see cmd/cloudweb)
+# instead of the Raspberry Pi framebuffer (raspi/scripts/toraspi.sh). The
+# third argument (if present) is the short display form (crypt, see
+# internal/sharepassword, scripts/share-to-web.sh) derived by cmd/backend
+# from "nc-password-seed=..." - not the full share password.
 #
-# CLOUDWEB_URL: Basis-URL des Servers, Default http://127.0.0.1:40080
-#   (muss auf demselben Host laufen - der Push-Endpoint akzeptiert nur
-#   Anfragen von localhost).
-# CLOUDWEB_PASSWORD: Fallback, falls kein drittes Argument übergeben wurde
-#   (z. B. bei manuellen Aufrufen ohne cmd/backend).
+# CLOUDWEB_URL: base URL of the server, default http://127.0.0.1:40080
+#   (must run on the same host - the push endpoint only accepts requests
+#   from localhost).
+# CLOUDWEB_PASSWORD: fallback if no third argument was passed (e.g. for
+#   manual calls without cmd/backend).
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
   cat >&2 <<USAGE
-Aufruf: $0 <qr-png-datei> <link> [passwort]
+Usage: $0 <qr-png-file> <link> [password]
 
-Das ist der interne Ausgabe-Hook (siehe MYSHARE_DISPLAY_HOOK) - kein
-Upload-Tool. Er erwartet eine bereits fertige QR-Code-PNG (z. B. eine Datei
-aus /var/lib/myshare/tmp/*.png) und reicht sie nur an cloudweb weiter,
-lädt selbst nichts nach Nextcloud hoch.
+This is the internal output hook (see MYSHARE_DISPLAY_HOOK) - not an
+upload tool. It expects an already-finished QR code PNG (e.g. a file from
+/var/lib/myshare/tmp/*.png) and only forwards it to cloudweb, it doesn't
+upload anything to Nextcloud itself.
 
-Zum Teilen + Anzeigen einer beliebigen Datei stattdessen:
-  PRINTER=CloudWeb scripts/share.sh <datei>
-  scripts/share-to-web.sh <datei> <name>   # zusätzlich passwortgeschützt
+To share + display an arbitrary file instead:
+  PRINTER=CloudWeb scripts/share.sh <file>
+  scripts/share-to-web.sh <file> <name>   # additionally password-protected
 USAGE
   exit 1
 fi

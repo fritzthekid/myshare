@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# Teilt eine Datei über die "CloudWeb"-Warteschlange, optional zusätzlich
-# mit einem aus <name> (+ MAC-Adresse dieses Rechners, siehe
-# internal/sharepassword, cmd/backend) abgeleiteten Passwort geschützt.
-# Gedacht insbesondere für größere/sensiblere Dateien (z. B. ZIP-Archive),
-# bei denen der Link/QR-Code allein nicht ausreichend geschützt sein soll.
+# Shares a file via the "CloudWeb" queue, optionally additionally protected
+# with a password derived from <name> (+ this machine's MAC address, see
+# internal/sharepassword, cmd/backend). Meant especially for larger/more
+# sensitive files (e.g. ZIP archives), where the link/QR code alone
+# shouldn't be considered sufficiently protected.
 #
-# WICHTIG: Nur die angezeigte Kurzform (crypt) erscheint auf der
-# cloudweb-Anzeige - <name> selbst muss der Empfänger unabhängig davon
-# kennen (z. B. mündlich vereinbart) und beim Öffnen des Freigabelinks als
-# "<name><crypt>" zusammengesetzt als Passwort eintippen.
+# IMPORTANT: Only the displayed short form (crypt) appears on the cloudweb
+# display - <name> itself must be known to the recipient independently
+# (e.g. agreed verbally) and typed in as "<name><crypt>" combined as the
+# password when opening the share link.
 #
-# Aufruf:
-#   scripts/share-to-web.sh pfad/zu/test.zip           # ohne Passwortschutz
-#   scripts/share-to-web.sh pfad/zu/test.zip "name"    # mit Passwortschutz
+# Usage:
+#   scripts/share-to-web.sh path/to/test.zip           # without password protection
+#   scripts/share-to-web.sh path/to/test.zip "name"    # with password protection
 #   cat test.zip | scripts/share-to-web.sh - "name"
 set -euo pipefail
 
 if [ $# -lt 1 ]; then
-  echo "Aufruf: $0 <pfad|-> [name]" >&2
+  echo "Usage: $0 <path|-> [name]" >&2
   exit 1
 fi
 

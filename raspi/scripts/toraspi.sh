@@ -1,12 +1,12 @@
 #!/bin/bash
-# Ausgabe-Hook fuer backend/sendfile (siehe internal/output.Hook, aktiviert
-# per MYSHARE_DISPLAY_HOOK=/pfad/zu/toraspi.sh in backend.env).
+# Output hook for backend/sendfile (see internal/output.Hook, activated via
+# MYSHARE_DISPLAY_HOOK=/path/to/toraspi.sh in backend.env).
 #
-# Aufruf durch den Go-Code: toraspi.sh <qr-png-pfad> <link>
+# Called by the Go code as: toraspi.sh <qr-png-path> <link>
 #
-# Komponiert den QR-Code mit dem Link als Text daneben und schickt das
-# Ergebnis per ssh an das Display eines Raspberry Pi
-# (raspi/bin/pipetodisp.sh + raspi/services/fb-image-watcher.service dort).
+# Composes the QR code with the link as text next to it and sends the
+# result via ssh to a Raspberry Pi's display (raspi/bin/pipetodisp.sh +
+# raspi/services/fb-image-watcher.service there).
 set -euo pipefail
 
 PNG="$1"
@@ -14,7 +14,7 @@ LINK="$2"
 
 RASPI_HOST="${RASPI_HOST:-raspi.local}"
 RASPI_DISPLAY_TIMEOUT="${RASPI_DISPLAY_TIMEOUT:-10}"
-OUT="$(dirname "$PNG")/ausgabe.png"
+OUT="$(dirname "$PNG")/output.png"
 
 TEXT="${LINK#https://}"
 TEXT="${TEXT#http://}"

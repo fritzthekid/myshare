@@ -1,47 +1,46 @@
-CloudWeb fuer Windows - Installation
+CloudWeb for Windows - Installation
 =====================================
 
-1) cloudweb.zip an eine beliebige Stelle entpacken, z. B. nach
-   C:\install\ (Rechtsklick auf die ZIP-Datei -> "Alle extrahieren").
+1) Extract cloudweb.zip anywhere, e.g. to
+   C:\install\ (right-click the ZIP file -> "Extract All").
 
-2) In einer ADMINISTRATOR-PowerShell (Start-Menu -> "PowerShell" ->
-   Rechtsklick -> "Als Administrator ausfuehren"), im entpackten Ordner:
+2) In an ADMINISTRATOR PowerShell (Start menu -> "PowerShell" ->
+   right-click -> "Run as administrator"), in the extracted folder:
 
      Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
      .\install.ps1
 
-   Legt an: Drucker "CloudWeb", Windows-Dienst "CloudWeb", Konfigurations-
-   vorlage C:\ProgramData\myshare\backend.env.
+   Creates: printer "CloudWeb", Windows service "CloudWeb", configuration
+   template C:\ProgramData\myshare\backend.env.
 
-3) In einer NORMALEN PowerShell (ohne "Als Administrator ausfuehren" -
-   einfach auf den PowerShell-Eintrag im Start-Menu klicken), im selben
-   entpackten Ordner:
+3) In a NORMAL PowerShell (without "Run as administrator" - just click
+   the PowerShell entry in the Start menu), in the same extracted folder:
 
      Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
      .\userinstall.ps1
 
-   Richtet den Explorer-"Senden an"-Eintrag "CloudWeb Share" fuer dein
-   eigenes Benutzerkonto ein (bewusst getrennt von Schritt 2 - eine
-   elevierte Shell laeuft ggf. unter einem anderen Benutzerprofil).
+   Sets up the Explorer "Send to" entry "CloudWeb Share" for your own
+   user account (deliberately separate from step 2 - an elevated shell
+   may run under a different user profile).
 
-4) Zugangsdaten eintragen:
+4) Enter credentials:
 
      notepad C:\ProgramData\myshare\backend.env
 
-   NC_BASE_URL, NC_USERNAME, NC_PASSWORD (Nextcloud-App-Passwort, nicht das
-   Konto-Passwort) eintragen - Werte OHNE Anfuehrungszeichen! Danach:
+   Fill in NC_BASE_URL, NC_USERNAME, NC_PASSWORD (Nextcloud app password,
+   not the account password) - values WITHOUT quotes! Then:
 
      Restart-Service CloudWeb
 
-5) Testen:
-   - Drucken: eine beliebige Datei ueber den Drucker "CloudWeb" ausdrucken -
-     Link + QR-Code erscheinen automatisch auf http://localhost:40080/.
-   - Teilen: Rechtsklick auf eine Datei im Explorer -> "Senden an" ->
-     "CloudWeb Share" -> optional einen Namen fuer Passwortschutz eingeben.
+5) Testing:
+   - Printing: print any file via the "CloudWeb" printer - link + QR code
+     appear automatically at http://localhost:40080/.
+   - Sharing: right-click a file in Explorer -> "Send to" ->
+     "CloudWeb Share" -> optionally enter a name for password protection.
 
-Bei Problemen: cloudweb.exe laesst sich auch interaktiv statt als Dienst
-starten (zeigt Log-Ausgaben direkt im Fenster):
+If there are problems: cloudweb.exe can also be started interactively
+instead of as a service (shows log output directly in the window):
 
      Stop-Service CloudWeb
      C:\ProgramData\myshare\cloudweb.exe
-     (mit Strg+C beenden, danach: Start-Service CloudWeb)
+     (stop with Ctrl+C, then: Start-Service CloudWeb)

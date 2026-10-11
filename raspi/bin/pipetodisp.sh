@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# Konfigurierbar wie fb-image-watcher.sh (dieselben Env-Vars, damit beide
-# Skripte auf dasselbe Watch-Verzeichnis zeigen).
+# Configurable like fb-image-watcher.sh (same env vars, so both scripts
+# point at the same watch directory).
 WATCH_DIR="${WATCH_DIR:-$HOME/fb-drop}"
 BLACK_PNG="${BLACK_PNG:-$HOME/.fb-image-watcher/black.png}"
 

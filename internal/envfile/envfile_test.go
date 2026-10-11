@@ -9,7 +9,7 @@ import (
 func TestLoadSetsEnvVars(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "backend.env")
-	content := "# Kommentar\n\nNC_BASE_URL=https://example.invalid\nNC_USERNAME = alice \n"
+	content := "# comment\n\nNC_BASE_URL=https://example.invalid\nNC_USERNAME = alice \n"
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -23,13 +23,13 @@ func TestLoadSetsEnvVars(t *testing.T) {
 		t.Errorf("NC_BASE_URL = %q, want %q", got, "https://example.invalid")
 	}
 	if got := os.Getenv("NC_USERNAME"); got != "alice" {
-		t.Errorf("NC_USERNAME = %q, want %q (Whitespace muss getrimmt werden)", got, "alice")
+		t.Errorf("NC_USERNAME = %q, want %q (whitespace must be trimmed)", got, "alice")
 	}
 }
 
 func TestLoadMissingFileReturnsError(t *testing.T) {
 	if err := Load(filepath.Join(t.TempDir(), "does-not-exist.env")); err == nil {
-		t.Error("Load() auf fehlender Datei: erwarteter Fehler blieb aus")
+		t.Error("Load() on missing file: expected error did not occur")
 	}
 }
 
@@ -40,6 +40,6 @@ func TestLoadRejectsLineWithoutEquals(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := Load(path); err == nil {
-		t.Error("Load() bei Zeile ohne '=': erwarteter Fehler blieb aus")
+		t.Error("Load() on line without '=': expected error did not occur")
 	}
 }

@@ -79,8 +79,8 @@ func TestUploadFileFailureRaises(t *testing.T) {
 	defer srv.Close()
 
 	_, err := UploadFile([]byte("data"), "file.pdf", testCfg(srv.URL))
-	if err == nil || !strings.Contains(err.Error(), "Upload fehlgeschlagen") {
-		t.Fatalf("err = %v, want 'Upload fehlgeschlagen'", err)
+	if err == nil || !strings.Contains(err.Error(), "Upload failed") {
+		t.Fatalf("err = %v, want 'Upload failed'", err)
 	}
 	var nce *Error
 	if !errors.As(err, &nce) {
@@ -115,7 +115,7 @@ func TestUploadCreatesTargetDir(t *testing.T) {
 }
 
 func TestExistingTargetDirIsTolerated(t *testing.T) {
-	// 405 = Ordner existiert bereits -> darf nicht als Fehler durchschlagen
+	// 405 = folder already exists -> must not be treated as an error
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "MKCOL":
@@ -144,8 +144,8 @@ func TestTargetDirCreationFailureRaises(t *testing.T) {
 	defer srv.Close()
 
 	_, err := UploadFile([]byte("data"), "file.pdf", testCfg(srv.URL))
-	if err == nil || !strings.Contains(err.Error(), "Zielordner") {
-		t.Fatalf("err = %v, want mentioning 'Zielordner'", err)
+	if err == nil || !strings.Contains(err.Error(), "target folder") {
+		t.Fatalf("err = %v, want mentioning 'target folder'", err)
 	}
 }
 
@@ -203,7 +203,7 @@ func TestCreatePublicLinkSendsNoPasswordByDefault(t *testing.T) {
 		t.Fatalf("CreatePublicLink() error = %v", err)
 	}
 	if gotOK || gotPassword {
-		t.Errorf("password wurde gesendet, obwohl keins gesetzt war")
+		t.Errorf("password was sent even though none was set")
 	}
 }
 
@@ -279,8 +279,8 @@ func TestCreatePublicLinkFailureRaises(t *testing.T) {
 	defer srv.Close()
 
 	_, err := CreatePublicLink("/PrinterUploads/file.pdf", testCfg(srv.URL))
-	if err == nil || !strings.Contains(err.Error(), "Share-Erstellung fehlgeschlagen") {
-		t.Fatalf("err = %v, want 'Share-Erstellung fehlgeschlagen'", err)
+	if err == nil || !strings.Contains(err.Error(), "Failed to create share") {
+		t.Fatalf("err = %v, want 'Failed to create share'", err)
 	}
 }
 
@@ -292,7 +292,7 @@ func TestCreatePublicLinkUnexpectedResponseRaises(t *testing.T) {
 	defer srv.Close()
 
 	_, err := CreatePublicLink("/PrinterUploads/file.pdf", testCfg(srv.URL))
-	if err == nil || !strings.Contains(err.Error(), "Unerwartete Antwort") {
-		t.Fatalf("err = %v, want 'Unerwartete Antwort'", err)
+	if err == nil || !strings.Contains(err.Error(), "Unexpected response") {
+		t.Fatalf("err = %v, want 'Unexpected response'", err)
 	}
 }

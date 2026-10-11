@@ -11,29 +11,29 @@ import (
 	"golang.org/x/sys/windows/svc"
 )
 
-// serviceName muss mit dem Namen übereinstimmen, unter dem
-// deploy/windows/install.ps1 den Dienst per New-Service anlegt, sonst
-// erkennt svc.IsWindowsService() den Dienst-Kontext nicht zuverlässig.
+// serviceName must match the name under which deploy/windows/install.ps1
+// creates the service via New-Service, otherwise svc.IsWindowsService()
+// won't reliably detect the service context.
 const serviceName = "CloudWeb"
 
-// runService startet den HTTP-Server und den Druck-Ordner-Watcher
-// (watcher_windows.go). Läuft der Prozess unter der Kontrolle des Service
-// Control Managers (installiert per New-Service), übernimmt handler den
-// Start/Stop-Handshake; interaktiv gestartet (z. B. beim Testen in der VM
-// per "cloudweb.exe" in einer Konsole) läuft alles blockierend direkt,
-// ohne SCM-Handshake - praktisch zum Entwickeln, ohne jedes Mal den Dienst
-// neu registrieren zu müssen.
+// runService starts the HTTP server and the print folder watcher
+// (watcher_windows.go). If the process runs under the control of the
+// Service Control Manager (installed via New-Service), handler takes care
+// of the start/stop handshake; started interactively (e.g. when testing
+// in the VM via "cloudweb.exe" in a console), everything just runs
+// blocking directly, without an SCM handshake - convenient for
+// development, without having to re-register the service every time.
 func runService(st *state, mux http.Handler, addr string) {
 	isService, err := svc.IsWindowsService()
 	if err != nil {
-		log.Fatalf("konnte Service-Kontext nicht bestimmen: %v", err)
+		log.Fatalf("could not determine service context: %v", err)
 	}
 	if !isService {
 		runInteractive(st, mux, addr)
 		return
 	}
 	if err := svc.Run(serviceName, &serviceHandler{st: st, mux: mux, addr: addr}); err != nil {
-		log.Fatalf("Dienst beendet mit Fehler: %v", err)
+		log.Fatalf("service exited with error: %v", err)
 	}
 }
 
@@ -42,7 +42,7 @@ func runInteractive(st *state, mux http.Handler, addr string) {
 	go startPrintWatcher(st, stop)
 
 	srv := &http.Server{Addr: addr, Handler: mux}
-	log.Printf("cloudweb hört auf %s (interaktiv, kein Windows-Dienst)", addr)
+	log.Printf("cloudweb listening on %s (interactive, not a Windows service)", addr)
 	log.Fatal(srv.ListenAndServe())
 }
 
@@ -52,11 +52,11 @@ type serviceHandler struct {
 	addr string
 }
 
-// Execute implementiert svc.Handler - siehe
-// https://pkg.go.dev/golang.org/x/sys/windows/svc#Handler. Der Service
-// Control Manager erwartet zeitnah eine erste Statusmeldung, danach
-// wiederholt entweder eine neue Statusänderung oder spätestens vor Ablauf
-// der (Standard-)Wartezeit ein Lebenszeichen.
+// Execute implements svc.Handler - see
+// https://pkg.go.dev/golang.org/x/sys/windows/svc#Handler. The Service
+// Control Manager expects an initial status report promptly, after that
+// either a repeated new status change or, at the latest before the
+// (default) wait time expires, a sign of life.
 func (h *serviceHandler) Execute(args []string, r <-chan svc.ChangeRequest, s chan<- svc.Status) (bool, uint32) {
 	const accepted = svc.AcceptStop | svc.AcceptShutdown
 
@@ -74,7 +74,7 @@ func (h *serviceHandler) Execute(args []string, r <-chan svc.ChangeRequest, s ch
 	for {
 		select {
 		case err := <-serveErr:
-			log.Printf("HTTP-Server beendet: %v", err)
+			log.Printf("HTTP server exited: %v", err)
 			close(stop)
 			s <- svc.Status{State: svc.StopPending}
 			return false, 1

@@ -1,8 +1,8 @@
-// Package qrview erzeugt aus dem Freigabelink einen QR-Code als PNG.
+// Package qrview generates a QR code PNG from the share link.
 //
-// Der öffentliche Link soll später als QR-Code angezeigt werden. Vorläufig
-// wird das PNG nur in eine Datei geschrieben (analog zur Text-Ausgabe des
-// Links).
+// The public link is meant to be displayed later as a QR code. For now,
+// the PNG is just written to a file (analogous to the text output of the
+// link).
 package qrview
 
 import (
@@ -11,13 +11,13 @@ import (
 	qrcode "github.com/skip2/go-qrcode"
 )
 
-// PNGBytes rendert link als QR-Code und liefert die PNG-Bytes zurück (z. B.
-// für eine direkte HTTP-Antwort, ohne Umweg über eine Datei).
+// PNGBytes renders link as a QR code and returns the PNG bytes (e.g. for a
+// direct HTTP response, without going through a file).
 func PNGBytes(link string) ([]byte, error) {
 	return qrcode.Encode(link, qrcode.Medium, 256)
 }
 
-// WritePNG rendert link als QR-Code und speichert ihn als PNG unter path.
+// WritePNG renders link as a QR code and saves it as a PNG at path.
 func WritePNG(link string, path string) error {
 	data, err := PNGBytes(link)
 	if err != nil {

@@ -11,15 +11,15 @@ func ts() time.Time {
 }
 
 func TestGeneratesNameWithTimestampAndTitle(t *testing.T) {
-	name := Generate("Rechnung September", ".pdf", ts())
-	want := "20260907-143005_Rechnung_September.pdf"
+	name := Generate("Invoice September", ".pdf", ts())
+	want := "20260907-143005_Invoice_September.pdf"
 	if name != want {
 		t.Errorf("Generate() = %q, want %q", name, want)
 	}
 }
 
 func TestSanitizesUnsafeCharacters(t *testing.T) {
-	name := Generate("Bericht: Q3/Ä Ö Ü??.docx", ".pdf", ts())
+	name := Generate("Report: Q3/Ä Ö Ü??.docx", ".pdf", ts())
 	if !strings.HasPrefix(name, "20260907-143005_") {
 		t.Errorf("Generate() = %q, missing timestamp prefix", name)
 	}
@@ -73,15 +73,15 @@ func TestDetectExtension(t *testing.T) {
 		want string
 	}{
 		{"PDF", []byte("%PDF-1.4 ..."), ".pdf"},
-		{"ZIP lokaler Dateikopf", []byte("PK\x03\x04 ..."), ".zip"},
-		{"ZIP leeres Archiv", []byte("PK\x05\x06 ..."), ".zip"},
-		{"ZIP mit Data-Descriptor", []byte("PK\x07\x08 ..."), ".zip"},
+		{"ZIP local file header", []byte("PK\x03\x04 ..."), ".zip"},
+		{"ZIP empty archive", []byte("PK\x05\x06 ..."), ".zip"},
+		{"ZIP with data descriptor", []byte("PK\x07\x08 ..."), ".zip"},
 		{"PNG", []byte("\x89PNG\r\n\x1a\n..."), ".png"},
 		{"JPEG", []byte{0xFF, 0xD8, 0xFF, 0xE0}, ".jpg"},
 		{"GIF87a", []byte("GIF87a..."), ".gif"},
 		{"GIF89a", []byte("GIF89a..."), ".gif"},
-		{"unbekannt", []byte("irgendwelche Bytes"), ".bin"},
-		{"leer", []byte{}, ".bin"},
+		{"unknown", []byte("some random bytes"), ".bin"},
+		{"empty", []byte{}, ".bin"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

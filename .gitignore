@@ -13,7 +13,12 @@
 # Claude Code session data
 .claude/
 
-# Lokale Testdateien
+# Stray Claude Code internal files occasionally written into the project
+# directory instead of a proper system cache/state location
+/backups/
+/cache/
+
+# Local test files
 testdruck.pdf
 testdata.zip
 ausgabe.png

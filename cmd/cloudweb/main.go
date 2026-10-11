@@ -1,10 +1,10 @@
-// Command cloudweb ist eine kleine Web-Anzeige für den zuletzt erzeugten
-// QR-Code + Link (+ optional Passwort) - Ersatz für einen physischen
-// Bildschirm (z. B. statt des Raspberry-Pi-Framebuffers, siehe raspi/).
-// Der Druckertreiber (oder sendfile/webshare) "pusht" das Ergebnis per
-// HTTP-POST an /push (siehe internal/output.Hook +
-// scripts/push-to-cloudweb.sh); eine im Browser offene Anzeigeseite pollt
-// automatisch und zeigt das jeweils Neueste an.
+// Command cloudweb is a small web display for the most recently generated
+// QR code + link (+ optional password) - a replacement for a physical
+// screen (e.g. instead of the Raspberry Pi framebuffer, see raspi/). The
+// print driver (or sendfile/webshare) "pushes" the result via HTTP POST to
+// /push (see internal/output.Hook + scripts/push-to-cloudweb.sh); a display
+// page open in the browser polls automatically and shows whatever's
+// newest.
 package main
 
 import (
@@ -23,8 +23,8 @@ import (
 //go:embed static/index.html
 var indexHTML []byte
 
-// state hält den zuletzt gepushten QR-Code + Link (+ Passwort). Ein
-// Prozess zeigt zu jeder Zeit nur den aktuellsten Stand, keine Historie.
+// state holds the most recently pushed QR code + link (+ password). A
+// process shows only the latest state at any time, no history.
 type state struct {
 	mu        sync.RWMutex
 	png       []byte
@@ -55,10 +55,10 @@ type statusResponse struct {
 	HasImage  bool   `json:"has_image"`
 }
 
-// isLocalRequest erlaubt /push nur von diesem Host selbst - der Hook läuft
-// im selben Vertrauenskontext wie der Druckertreiber, die Anzeigeseite
-// bleibt trotzdem im Netz erreichbar (z. B. für einen Monitor/Tablet
-// anstelle des Pi-Displays).
+// isLocalRequest allows /push only from this host itself - the hook runs
+// in the same trust context as the print driver, the display page remains
+// reachable on the network regardless (e.g. for a monitor/tablet instead
+// of the Pi display).
 func isLocalRequest(r *http.Request) bool {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -70,27 +70,27 @@ func isLocalRequest(r *http.Request) bool {
 
 func handlePush(st *state, w http.ResponseWriter, r *http.Request) {
 	if !isLocalRequest(r) {
-		http.Error(w, "nur von localhost erlaubt", http.StatusForbidden)
+		http.Error(w, "only allowed from localhost", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		http.Error(w, "ungültige Anfrage", http.StatusBadRequest)
+		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	file, _, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "Feld 'file' fehlt", http.StatusBadRequest)
+		http.Error(w, "field 'file' is missing", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		http.Error(w, "Datei konnte nicht gelesen werden", http.StatusBadRequest)
+		http.Error(w, "file could not be read", http.StatusBadRequest)
 		return
 	}
 	if len(data) == 0 {
-		http.Error(w, "Datei ist leer", http.StatusBadRequest)
+		http.Error(w, "file is empty", http.StatusBadRequest)
 		return
 	}
 
@@ -124,9 +124,9 @@ func newMux(st *state) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		// Ohne diesen Header behält der Browser eine einmal geladene Seite
-		// unbegrenzt im Cache - ein Deploy einer neuen cloudweb-Version zeigt
-		// sich dann nur nach manuellem Hard-Reload (live so beobachtet).
+		// Without this header, the browser keeps a once-loaded page cached
+		// indefinitely - deploying a new cloudweb version then only shows
+		// up after a manual hard reload (observed live).
 		w.Header().Set("Cache-Control", "no-store")
 		_, _ = w.Write(indexHTML)
 	})
@@ -144,11 +144,11 @@ func newMux(st *state) *http.ServeMux {
 
 func main() {
 	if err := envfile.LoadDefault(); err != nil {
-		// Fehlt die Datei, ist LoadDefault() bereits ein No-op (nil); ein
-		// Fehler hier bedeutet, die Datei existiert, ist aber kaputt - das
-		// soll aber die reine Anzeigefunktion nicht verhindern, deshalb nur
-		// eine Warnung statt eines Abbruchs.
-		println("WARNUNG: Konfigurationsdatei konnte nicht geladen werden:", err.Error())
+		// If the file is missing, LoadDefault() is already a no-op (nil); an
+		// error here means the file exists but is broken - that shouldn't
+		// prevent the plain display function though, hence just a warning
+		// instead of aborting.
+		println("WARNING: configuration file could not be loaded:", err.Error())
 	}
 
 	addr := os.Getenv("CLOUDWEB_LISTEN")

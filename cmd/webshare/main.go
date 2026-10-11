@@ -1,11 +1,11 @@
-// Command webshare stellt sendfile als kleinen HTTP-Dienst bereit, damit
-// beliebige Geräte im Netz (z. B. ein Handy per PWA/Browser statt einer
-// nativen App) Dateien hochladen und den QR-Code direkt angezeigt bekommen,
-// ohne selbst Nextcloud-Zugangsdaten zu benötigen.
+// Command webshare offers sendfile as a small HTTP service, so any device
+// on the network (e.g. a phone via PWA/browser instead of a native app) can
+// upload files and have the QR code displayed directly, without needing
+// its own Nextcloud credentials.
 //
-// Alle Routen liegen unter /s/{token}/ - {token} muss exakt WEBSHARE_TOKEN
-// entsprechen, alles andere liefert 404 (Absicherung per geheimem
-// URL-Bestandteil statt Login).
+// All routes live under /s/{token}/ - {token} must exactly match
+// WEBSHARE_TOKEN, anything else returns 404 (secured via a secret URL
+// component instead of a login).
 package main
 
 import (
@@ -31,11 +31,11 @@ import (
 //go:embed static/index.html
 var indexHTML []byte
 
-// 200 MiB - großzügig genug für Fotos/kleine Videos/Zip-Archive, verhindert
-// aber, dass ein Client den Prozess mit einem riesigen Body erschöpft.
+// 200 MiB - generous enough for photos/small videos/zip archives, but
+// prevents a client from exhausting the process with a huge body.
 const maxUploadBytes = 200 << 20
 
-// Als Funktionsvariablen, damit Tests sie durch Fakes ersetzen können.
+// As function variables so tests can replace them with fakes.
 var (
 	uploadFile       = nextcloud.UploadFile
 	createPublicLink = nextcloud.CreatePublicLink
@@ -59,24 +59,24 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 func handleUpload(cfg *config.Config, w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes)
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Datei zu groß oder ungültige Anfrage"})
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "File too large or invalid request"})
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Keine Datei erhalten"})
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "No file received"})
 		return
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Datei konnte nicht gelesen werden"})
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "File could not be read"})
 		return
 	}
 	if len(data) == 0 {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "Datei ist leer"})
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "File is empty"})
 		return
 	}
 
@@ -108,16 +108,16 @@ func handleUpload(cfg *config.Config, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Log + optionaler Anzeige-Hook wie bei backend/sendfile - best effort,
-	// der Link ist zu diesem Zeitpunkt bereits erfolgreich erzeugt.
+	// Log + optional display hook like backend/sendfile - best effort, the
+	// link has already been successfully created at this point.
 	if err := output.Default(link); err != nil {
-		log.Printf("WARNING: Ausgabe (Log/QR-Datei/Hook) fehlgeschlagen: %v", err)
+		log.Printf("WARNING: output (log/QR file/hook) failed: %v", err)
 	}
 
 	png, err := qrview.PNGBytes(link)
 	if err != nil {
-		log.Printf("ERROR: QR-Code-Erzeugung fehlgeschlagen: %v", err)
-		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "QR-Code-Erzeugung fehlgeschlagen"})
+		log.Printf("ERROR: QR code generation failed: %v", err)
+		writeJSON(w, http.StatusInternalServerError, errorResponse{Error: "QR code generation failed"})
 		return
 	}
 
@@ -163,7 +163,7 @@ func main() {
 
 	token := os.Getenv("WEBSHARE_TOKEN")
 	if token == "" {
-		log.Fatal("ERROR: WEBSHARE_TOKEN muss gesetzt sein (langes zufälliges Token, z. B. `openssl rand -hex 24`)")
+		log.Fatal("ERROR: WEBSHARE_TOKEN must be set (a long random token, e.g. `openssl rand -hex 24`)")
 	}
 
 	if dir := os.Getenv("MYSHARE_OUTPUT_DIR"); dir != "" {
@@ -179,6 +179,6 @@ func main() {
 	}
 
 	mux := newMux(cfg, token)
-	log.Printf("myshare-webshare hört auf %s (Pfad /s/<token>/)", addr)
+	log.Printf("myshare-webshare listening on %s (path /s/<token>/)", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }

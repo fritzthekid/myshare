@@ -1,5 +1,5 @@
-// Package nextcloud kümmert sich um den Upload per WebDAV (R4) und die
-// Erzeugung eines öffentlichen, ablaufenden Links per OCS-API (R5).
+// Package nextcloud handles the upload via WebDAV (R4) and the creation of
+// a public, expiring link via the OCS API (R5).
 package nextcloud
 
 import (
@@ -17,8 +17,7 @@ import (
 
 const httpTimeout = 30 * time.Second
 
-// Error wird bei fehlgeschlagenem Upload oder fehlgeschlagener
-// Share-Erstellung zurückgegeben.
+// Error is returned on a failed upload or a failed share creation.
 type Error struct {
 	Msg string
 }
@@ -36,11 +35,11 @@ func davURL(cfg *config.Config, remotePath string) string {
 	return fmt.Sprintf("%s/remote.php/dav/files/%s%s", cfg.BaseURL, cfg.Username, remotePath)
 }
 
-// ensureRemoteDir legt das Zielverzeichnis (inkl. Zwischenebenen) per WebDAV
-// MKCOL an. Nextcloud legt bei einem PUT keine fehlenden Elternordner an,
-// deshalb muss das Zielverzeichnis vorher existieren. Ein bereits
-// vorhandener Ordner meldet sich mit 405 (Method Not Allowed) und wird
-// bewusst ignoriert.
+// ensureRemoteDir creates the target directory (including intermediate
+// levels) via WebDAV MKCOL. Nextcloud doesn't create missing parent folders
+// on a PUT, so the target directory must exist beforehand. An already
+// existing folder reports 405 (Method Not Allowed), which is deliberately
+// ignored.
 func ensureRemoteDir(cfg *config.Config) error {
 	client := &http.Client{Timeout: httpTimeout}
 	path := ""
@@ -57,20 +56,20 @@ func ensureRemoteDir(cfg *config.Config) error {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			return &Error{Msg: fmt.Sprintf("Anlegen des Zielordners fehlgeschlagen: %v", err)}
+			return &Error{Msg: fmt.Sprintf("Failed to create target folder: %v", err)}
 		}
 		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 
 		if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusMethodNotAllowed {
-			return &Error{Msg: fmt.Sprintf("Anlegen des Zielordners fehlgeschlagen (%d): %s", resp.StatusCode, truncate(string(body), 200))}
+			return &Error{Msg: fmt.Sprintf("Failed to create target folder (%d): %s", resp.StatusCode, truncate(string(body), 200))}
 		}
 	}
 	return nil
 }
 
-// UploadFile lädt data per WebDAV PUT unter filename in cfg.TargetDir hoch
-// und liefert den entstandenen Remote-Pfad zurück.
+// UploadFile uploads data via WebDAV PUT as filename in cfg.TargetDir and
+// returns the resulting remote path.
 func UploadFile(data []byte, filename string, cfg *config.Config) (string, error) {
 	if err := ensureRemoteDir(cfg); err != nil {
 		return "", err
@@ -87,7 +86,7 @@ func UploadFile(data []byte, filename string, cfg *config.Config) (string, error
 	client := &http.Client{Timeout: httpTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", &Error{Msg: fmt.Sprintf("Upload fehlgeschlagen: %v", err)}
+		return "", &Error{Msg: fmt.Sprintf("Upload failed: %v", err)}
 	}
 	body, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
@@ -96,7 +95,7 @@ func UploadFile(data []byte, filename string, cfg *config.Config) (string, error
 	case http.StatusOK, http.StatusCreated, http.StatusNoContent:
 		return remotePath, nil
 	default:
-		return "", &Error{Msg: fmt.Sprintf("Upload fehlgeschlagen (%d): %s", resp.StatusCode, truncate(string(body), 200))}
+		return "", &Error{Msg: fmt.Sprintf("Upload failed (%d): %s", resp.StatusCode, truncate(string(body), 200))}
 	}
 }
 
@@ -108,23 +107,22 @@ type shareResponse struct {
 	} `json:"ocs"`
 }
 
-// CreatePublicLink erzeugt für remotePath über die OCS-Share-API
-// (shareType=3, öffentlicher Link) einen Freigabelink, der nach
-// cfg.LinkExpireDays Tagen abläuft.
+// CreatePublicLink creates a share link for remotePath via the OCS share API
+// (shareType=3, public link) that expires after cfg.LinkExpireDays days.
 //
-// Der reine Share-Link (".../s/TOKEN") liefert die HTML-Vorschauseite der
-// Nextcloud-Weboberfläche. Mit angehängtem "/download" antwortet der Server
-// stattdessen mit "Content-Disposition: attachment", sodass Browser die
-// Datei direkt herunterladen bzw. im Handy-PDF-Viewer öffnen, statt sie
-// zuerst im Web-Cloud-Viewer anzuzeigen.
+// The plain share link (".../s/TOKEN") returns Nextcloud's web UI preview
+// page. With "/download" appended, the server instead responds with
+// "Content-Disposition: attachment", so browsers download the file directly
+// or open it in the phone's PDF viewer, instead of showing it in the web
+// cloud viewer first.
 func CreatePublicLink(remotePath string, cfg *config.Config) (string, error) {
 	return CreatePublicLinkWithPassword(remotePath, cfg, "")
 }
 
-// CreatePublicLinkWithPassword ist wie CreatePublicLink, setzt aber
-// zusätzlich ein Freigabe-Passwort (Nextclouds OCS-Share-API kennt das
-// nativ), falls password nicht leer ist - siehe cmd/backend,
-// internal/sharepassword, scripts/share-to-web.sh.
+// CreatePublicLinkWithPassword is like CreatePublicLink, but additionally
+// sets a share password (Nextcloud's OCS share API supports this natively)
+// if password is not empty - see cmd/backend, internal/sharepassword,
+// scripts/share-to-web.sh.
 func CreatePublicLinkWithPassword(remotePath string, cfg *config.Config, password string) (string, error) {
 	shareURL := fmt.Sprintf("%s/ocs/v2.php/apps/files_sharing/api/v1/shares", cfg.BaseURL)
 	expireDate := time.Now().AddDate(0, 0, cfg.LinkExpireDays).Format("2006-01-02")
@@ -149,18 +147,18 @@ func CreatePublicLinkWithPassword(remotePath string, cfg *config.Config, passwor
 	client := &http.Client{Timeout: httpTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", &Error{Msg: fmt.Sprintf("Share-Erstellung fehlgeschlagen: %v", err)}
+		return "", &Error{Msg: fmt.Sprintf("Failed to create share: %v", err)}
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return "", &Error{Msg: fmt.Sprintf("Share-Erstellung fehlgeschlagen (%d): %s", resp.StatusCode, truncate(string(body), 200))}
+		return "", &Error{Msg: fmt.Sprintf("Failed to create share (%d): %s", resp.StatusCode, truncate(string(body), 200))}
 	}
 
 	var parsed shareResponse
 	if err := json.Unmarshal(body, &parsed); err != nil || parsed.OCS.Data.URL == "" {
-		return "", &Error{Msg: fmt.Sprintf("Unerwartete Antwort der Share-API: %s", truncate(string(body), 200))}
+		return "", &Error{Msg: fmt.Sprintf("Unexpected response from share API: %s", truncate(string(body), 200))}
 	}
 
 	return strings.TrimRight(parsed.OCS.Data.URL, "/") + "/download", nil

@@ -1,12 +1,11 @@
-// Command sendfile teilt eine beliebige Datei über Nextcloud + QR-Code.
+// Command sendfile shares an arbitrary file via Nextcloud + QR code.
 //
-// Nutzt dieselben Bausteine wie das CUPS-Backend (Config, Upload,
-// Freigabelink, Log/QR-Ausgabe), aber ohne die CUPS-Aufrufsignatur
-// (job-id user title copies options [file]). Stattdessen ein einfacher
-// Aufruf:
+// Uses the same building blocks as the CUPS backend (config, upload, share
+// link, log/QR output), but without the CUPS invocation signature
+// (job-id user title copies options [file]). Instead, a simple call:
 //
-//	sendfile pfad/zu/test.zip
-//	sendfile pfad/zu/test.zip "Anderer Titel.zip"
+//	sendfile path/to/test.zip
+//	sendfile path/to/test.zip "Other Title.zip"
 //	cat test.zip | sendfile - test.zip
 package main
 
@@ -25,14 +24,14 @@ import (
 	"github.com/fritzthekid/myshare/internal/output"
 )
 
-// Als Funktionsvariablen, damit Tests sie durch Fakes ersetzen können.
+// As function variables so tests can replace them with fakes.
 var (
 	uploadFile       = nextcloud.UploadFile
 	createPublicLink = nextcloud.CreatePublicLink
 	defaultOutput    = output.Default
 )
 
-var errNoData = errors.New("Keine Daten erhalten")
+var errNoData = errors.New("no data received")
 
 func readData(path string, stdin io.Reader) ([]byte, error) {
 	if path == "-" {
@@ -46,7 +45,7 @@ func readData(path string, stdin io.Reader) ([]byte, error) {
 
 func run(argv []string, cfg *config.Config, out func(string) error, stdin io.Reader) int {
 	if len(argv) < 2 {
-		fmt.Fprintln(os.Stderr, "Aufruf: sendfile <pfad|-> [label]")
+		fmt.Fprintln(os.Stderr, "Usage: sendfile <path|-> [label]")
 		return 1
 	}
 	path := argv[1]
@@ -109,9 +108,9 @@ func doRun(path, stem, ext string, cfg *config.Config, stdin io.Reader) (string,
 	return createPublicLink(remotePath, cfg)
 }
 
-// reportError meldet err auf stderr und liefert den Exit-Code 1: die
-// "keine Daten"-Meldung und NextcloudError bleiben unverändert, alles
-// andere gilt als unerwarteter Fehler.
+// reportError reports err to stderr and returns exit code 1: the "no data"
+// message and NextcloudError are kept as-is, anything else counts as an
+// unexpected error.
 func reportError(err error) int {
 	switch {
 	case errors.Is(err, errNoData):
@@ -121,7 +120,7 @@ func reportError(err error) int {
 		if errors.As(err, &nce) {
 			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		} else {
-			fmt.Fprintf(os.Stderr, "ERROR: Unerwarteter Fehler: %v\n", err)
+			fmt.Fprintf(os.Stderr, "ERROR: unexpected error: %v\n", err)
 		}
 	}
 	return 1

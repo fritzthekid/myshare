@@ -99,7 +99,7 @@ func TestUploadsFileWithNameAndPushesLink(t *testing.T) {
 		t.Errorf("pushedLink = %q", pushedLink)
 	}
 	if !strings.Contains(stdout.String(), pushedLink) || !strings.Contains(stdout.String(), pushedCrypt) {
-		t.Errorf("stdout enthält nicht Link/Crypt: %q", stdout.String())
+		t.Errorf("stdout does not contain link/crypt: %q", stdout.String())
 	}
 }
 
@@ -170,7 +170,7 @@ func TestEmptyNameMeansNoPassword(t *testing.T) {
 		t.Errorf("password = %q, want leer", gotPassword)
 	}
 	if macCalled {
-		t.Error("MAC-Adresse wurde ohne Namen abgefragt - unnötig und Seiteneffekt-behaftet")
+		t.Error("MAC address was looked up without a name - unnecessary and side-effect-laden")
 	}
 }
 
@@ -199,7 +199,7 @@ func TestMACLookupFailureAborts(t *testing.T) {
 	if rc != 1 {
 		t.Fatalf("rc = %d, want 1", rc)
 	}
-	if !strings.Contains(stderr, "MAC-Adresse") {
+	if !strings.Contains(stderr, "MAC address") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }
@@ -213,7 +213,7 @@ func TestUploadErrorIsReported(t *testing.T) {
 
 	defer withFakes(
 		func(data []byte, filename string, cfg *config.Config) (string, error) {
-			return "", &nextcloud.Error{Msg: "Upload fehlgeschlagen (507)"}
+			return "", &nextcloud.Error{Msg: "Upload failed (507)"}
 		},
 		nil, nil, nil,
 	)()
@@ -227,7 +227,7 @@ func TestUploadErrorIsReported(t *testing.T) {
 	if rc != 1 {
 		t.Fatalf("rc = %d, want 1", rc)
 	}
-	if !strings.Contains(stderr, "Upload fehlgeschlagen") {
+	if !strings.Contains(stderr, "Upload failed") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }
@@ -241,7 +241,7 @@ func TestMissingArgumentsReturnsError(t *testing.T) {
 	if rc != 1 {
 		t.Fatalf("rc = %d, want 1", rc)
 	}
-	if !strings.Contains(stderr, "Aufruf:") {
+	if !strings.Contains(stderr, "Usage:") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }
@@ -268,7 +268,7 @@ func TestPushFailureDoesNotFailTheCommand(t *testing.T) {
 	rc := run([]string{"fileshare", path, ""}, testCfg, nil, &stdout)
 
 	if rc != 0 {
-		t.Fatalf("rc = %d, want 0 (Push-Fehler darf die Freigabe nicht scheitern lassen)", rc)
+		t.Fatalf("rc = %d, want 0 (a push failure must not fail the share)", rc)
 	}
 	if !strings.Contains(stdout.String(), "https://cloud.example.com/s/xyz/download") {
 		t.Errorf("stdout sollte den Link trotzdem enthalten: %q", stdout.String())
@@ -312,7 +312,7 @@ func TestDefaultPushSendsMultipartFormToCloudwebURL(t *testing.T) {
 		t.Errorf("password = %q, want CRYPT123", gotPassword)
 	}
 	if !gotFileNonEmpty {
-		t.Error("Datei-Feld 'file' war leer, erwartet QR-Code-PNG")
+		t.Error("file field 'file' was empty, expected a QR code PNG")
 	}
 	mediaType, _, err := mime.ParseMediaType(gotContentType)
 	if err != nil || !strings.HasPrefix(mediaType, "multipart/") {

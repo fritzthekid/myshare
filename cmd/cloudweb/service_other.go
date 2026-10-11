@@ -7,11 +7,11 @@ import (
 	"net/http"
 )
 
-// runService startet den HTTP-Server blockierend. Unter Linux/macOS läuft
-// cloudweb als gewöhnlicher systemd-Dienst (siehe deploy/cloudweb.service)
-// - kein Service-Control-Manager-Handshake und kein Ordner-Watcher nötig,
-// das übernimmt dort das CUPS-Backend (cmd/backend) per Push an /push.
+// runService starts the HTTP server, blocking. On Linux/macOS, cloudweb
+// runs as a regular systemd service (see deploy/cloudweb.service) - no
+// Service Control Manager handshake and no folder watcher needed, the
+// CUPS backend (cmd/backend) handles that there via a push to /push.
 func runService(st *state, mux http.Handler, addr string) {
-	log.Printf("cloudweb hört auf %s", addr)
+	log.Printf("cloudweb listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }

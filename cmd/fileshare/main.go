@@ -1,17 +1,17 @@
-// Command fileshare ist das Windows-Äquivalent zu
-// scripts/share-to-web.sh + scripts/push-to-cloudweb.sh in einem Programm -
-// gedacht für die Einbindung als Explorer-"Senden an"-Eintrag (siehe
+// Command fileshare is the Windows equivalent of
+// scripts/share-to-web.sh + scripts/push-to-cloudweb.sh combined in one
+// program - meant for integration as an Explorer "Send to" entry (see
 // doc/anforderung_windows.md, deploy/windows/install.ps1).
 //
-// Aufruf (von Explorer "Senden an" automatisch so ausgelöst):
+// Invocation (triggered automatically by Explorer "Send to"):
 //
-//	fileshare.exe C:\Pfad\zur\Datei.pdf
+//	fileshare.exe C:\path\to\file.pdf
 //
-// Ohne zweites Argument wird der optionale "Name" (Grundlage des
-// Freigabe-Passworts, siehe internal/sharepassword) interaktiv auf der
-// Konsole abgefragt - leer bedeutet: keine Freigabe mit Passwortschutz,
-// wie eine Freigabe ohne Namen unter Linux (scripts/share-to-web.sh ohne
-// zweites Argument).
+// Without a second argument, the optional "Name" (the basis for the share
+// password, see internal/sharepassword) is prompted interactively on the
+// console - empty means: no password-protected share, same as a share
+// without a name on Linux (scripts/share-to-web.sh without a second
+// argument).
 package main
 
 import (
@@ -35,8 +35,8 @@ import (
 	"github.com/fritzthekid/myshare/internal/sharepassword"
 )
 
-// Als Funktionsvariablen, damit Tests sie durch Fakes ersetzen können
-// (analog zu cmd/backend, cmd/sendfile).
+// As function variables so tests can replace them with fakes (analogous
+// to cmd/backend, cmd/sendfile).
 var (
 	uploadFile       = nextcloud.UploadFile
 	createPublicLink = nextcloud.CreatePublicLinkWithPassword
@@ -44,7 +44,7 @@ var (
 	pushToCloudweb   = defaultPush
 )
 
-var errNoData = errors.New("Keine Daten erhalten")
+var errNoData = errors.New("no data received")
 
 func readData(path string, stdin io.Reader) ([]byte, error) {
 	if path == "-" {
@@ -56,11 +56,11 @@ func readData(path string, stdin io.Reader) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
-// promptName fragt den optionalen Namen interaktiv ab - wird nur genutzt,
-// wenn er nicht schon als zweites Argument übergeben wurde (Explorer
-// "Senden an" kann keine zusätzlichen Argumente mitgeben).
+// promptName asks for the optional name interactively - only used if it
+// wasn't already passed as a second argument (Explorer "Send to" can't
+// pass additional arguments).
 func promptName(stdin io.Reader, stdout io.Writer) (string, error) {
-	fmt.Fprint(stdout, "Name (optional, für Passwortschutz; leer = kein Passwort): ")
+	fmt.Fprint(stdout, "Name (optional, for password protection; empty = no password): ")
 	scanner := bufio.NewScanner(stdin)
 	if !scanner.Scan() {
 		return "", scanner.Err()
@@ -70,7 +70,7 @@ func promptName(stdin io.Reader, stdout io.Writer) (string, error) {
 
 func run(argv []string, cfg *config.Config, stdin io.Reader, stdout io.Writer) int {
 	if len(argv) < 2 {
-		fmt.Fprintln(os.Stderr, "Aufruf: fileshare <pfad|-> [name]")
+		fmt.Fprintln(os.Stderr, "Usage: fileshare <path|-> [name]")
 		return 1
 	}
 	path := argv[1]
@@ -82,7 +82,7 @@ func run(argv []string, cfg *config.Config, stdin io.Reader, stdout io.Writer) i
 	} else {
 		name, err = promptName(stdin, stdout)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "ERROR: Eingabe konnte nicht gelesen werden: %v\n", err)
+			fmt.Fprintf(os.Stderr, "ERROR: could not read input: %v\n", err)
 			return 1
 		}
 	}
@@ -94,13 +94,14 @@ func run(argv []string, cfg *config.Config, stdin io.Reader, stdout io.Writer) i
 
 	fmt.Fprintf(stdout, "Link: %s\n", link)
 	if crypt != "" {
-		fmt.Fprintf(stdout, "Passwort-Kurzform (zusammen mit %q eintippen): %s\n", name, crypt)
+		fmt.Fprintf(stdout, "Password short form (type in together with %q): %s\n", name, crypt)
 	}
 
-	// Ein nicht erreichbarer cloudweb-Dienst soll die bereits erfolgreiche
-	// Freigabe nicht als Fehlschlag melden - Link/Passwort stehen oben schon.
+	// An unreachable cloudweb service shouldn't report the already
+	// successful share as a failure - the link/password are already shown
+	// above.
 	if err := pushToCloudweb(link, crypt); err != nil {
-		fmt.Fprintf(stdout, "Hinweis: Push an cloudweb fehlgeschlagen (%v) - Link/QR oben sind trotzdem gültig.\n", err)
+		fmt.Fprintf(stdout, "Note: push to cloudweb failed (%v) - the link/QR code above is still valid.\n", err)
 	}
 
 	return 0
@@ -143,12 +144,12 @@ func doRun(path, name string, cfg *config.Config, stdin io.Reader) (link, crypt 
 
 	var password string
 	if name != "" {
-		// Siehe cmd/backend: dieselbe Ableitung (Name + MAC-Adresse dieses
-		// Rechners + eindeutiger Remote-Pfad), damit das Verhalten für den
-		// Empfänger identisch zur Linux-CloudWeb-Freigabe ist.
+		// See cmd/backend: same derivation (name + this machine's MAC
+		// address + unique remote path), so the behavior for the recipient
+		// is identical to the Linux CloudWeb share.
 		mac, macErr := localMAC()
 		if macErr != nil {
-			return "", "", fmt.Errorf("Passwort-Ableitung fehlgeschlagen (MAC-Adresse): %w", macErr)
+			return "", "", fmt.Errorf("password derivation failed (MAC address): %w", macErr)
 		}
 		crypt, password = sharepassword.Derive(name, name+mac+remotePath, cfg.LenCode)
 	}
@@ -157,10 +158,11 @@ func doRun(path, name string, cfg *config.Config, stdin io.Reader) (link, crypt 
 	return link, crypt, err
 }
 
-// defaultPush entspricht scripts/push-to-cloudweb.sh: rendert den QR-Code
-// selbst (kein externer Hook nötig) und pusht ihn per multipart/form-data
-// an einen lokal laufenden cloudweb-Dienst. crypt ist - wie beim
-// CUPS-Backend - die kurze Anzeige-Form, nicht das volle Freigabe-Passwort.
+// defaultPush corresponds to scripts/push-to-cloudweb.sh: renders the QR
+// code itself (no external hook needed) and pushes it via
+// multipart/form-data to a locally running cloudweb service. crypt is -
+// like with the CUPS backend - the short display form, not the full share
+// password.
 func defaultPush(link, crypt string) error {
 	png, err := qrview.PNGBytes(link)
 	if err != nil {
@@ -205,12 +207,12 @@ func defaultPush(link, crypt string) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("cloudweb antwortete mit Status %d", resp.StatusCode)
+		return fmt.Errorf("cloudweb responded with status %d", resp.StatusCode)
 	}
 	return nil
 }
 
-// reportError meldet err auf stderr und liefert den Exit-Code 1 (analog zu
+// reportError reports err to stderr and returns exit code 1 (analogous to
 // cmd/backend, cmd/sendfile).
 func reportError(err error) int {
 	switch {
@@ -221,7 +223,7 @@ func reportError(err error) int {
 		if errors.As(err, &nce) {
 			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		} else {
-			fmt.Fprintf(os.Stderr, "ERROR: Unerwarteter Fehler: %v\n", err)
+			fmt.Fprintf(os.Stderr, "ERROR: unexpected error: %v\n", err)
 		}
 	}
 	return 1
@@ -231,10 +233,10 @@ func main() {
 	_ = envfile.LoadDefault()
 	code := run(os.Args, nil, os.Stdin, os.Stdout)
 
-	// Explorer "Senden an" öffnet ein Konsolenfenster, das sich beim
-	// Prozessende sofort wieder schließt - ohne diese Pause wäre Link/
-	// Passwort-Kurzform nie lesbar.
-	fmt.Fprintln(os.Stdout, "\nDrücke Enter zum Beenden...")
+	// Explorer "Send to" opens a console window that closes immediately
+	// when the process ends - without this pause, the link/password short
+	// form would never be readable.
+	fmt.Fprintln(os.Stdout, "\nPress Enter to exit...")
 	_, _ = bufio.NewReader(os.Stdin).ReadString('\n')
 
 	os.Exit(code)

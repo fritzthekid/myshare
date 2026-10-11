@@ -1,7 +1,7 @@
-// Package envfile lädt eine einfache KEY=VALUE-Konfigurationsdatei in die
-// Prozess-Umgebung - das Windows-Äquivalent zu systemds "EnvironmentFile="
-// (siehe deploy/backend.env.example, deploy/*.service), das es unter
-// Windows-Diensten (New-Service) nicht gibt.
+// Package envfile loads a simple KEY=VALUE configuration file into the
+// process environment - the Windows equivalent of systemd's
+// "EnvironmentFile=" (see deploy/backend.env.example, deploy/*.service),
+// which doesn't exist for Windows services (New-Service).
 package envfile
 
 import (
@@ -11,10 +11,10 @@ import (
 	"strings"
 )
 
-// Load liest path zeilenweise als KEY=VALUE (leere Zeilen und mit "#"
-// beginnende Kommentarzeilen werden übersprungen) und setzt jede Variable
-// per os.Setenv. Eine bereits gesetzte Umgebungsvariable wird überschrieben,
-// damit eine Konfigurationsdatei verlässlich das gilt, was in ihr steht.
+// Load reads path line by line as KEY=VALUE (blank lines and lines starting
+// with "#" are skipped) and sets each variable via os.Setenv. An already-set
+// environment variable is overwritten, so a configuration file reliably
+// takes effect as written.
 func Load(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -32,12 +32,12 @@ func Load(path string) error {
 		}
 		key, value, ok := strings.Cut(line, "=")
 		if !ok {
-			return fmt.Errorf("%s:%d: keine KEY=VALUE-Zeile: %q", path, lineNo, line)
+			return fmt.Errorf("%s:%d: not a KEY=VALUE line: %q", path, lineNo, line)
 		}
 		key = strings.TrimSpace(key)
 		value = strings.TrimSpace(value)
 		if key == "" {
-			return fmt.Errorf("%s:%d: leerer Schlüssel", path, lineNo)
+			return fmt.Errorf("%s:%d: empty key", path, lineNo)
 		}
 		if err := os.Setenv(key, value); err != nil {
 			return err

@@ -109,10 +109,10 @@ func TestFromEnvRejectsInvalidLenCode(t *testing.T) {
 		"NC_BASE_URL": "https://cloud.example.com",
 		"NC_USERNAME": "change-cloud-user",
 		"NC_PASSWORD": "app-token",
-		"NC_LEN_CODE": "nicht-numerisch",
+		"NC_LEN_CODE": "not-numeric",
 	}
 	if _, err := FromEnv(env); err == nil {
-		t.Fatal("FromEnv() mit ungültigem NC_LEN_CODE: erwarteter Fehler blieb aus")
+		t.Fatal("FromEnv() with invalid NC_LEN_CODE: expected error did not occur")
 	}
 }
 

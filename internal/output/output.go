@@ -1,8 +1,8 @@
-// Package output stellt die vorläufige Test-Ausgabe (R7) bereit: Statt
-// stdout (das unter dem CUPS-Daemon nicht sichtbar ist) wird der Link in ein
-// Verzeichnis geschrieben, damit man ihn nach einem Testdruck nachschlagen
-// kann - als Textzeile in links.log und als QR-Code-PNG. Wird später durch
-// die eigentliche QR-View ersetzt.
+// Package output provides the preliminary test output (R7): instead of
+// stdout (which isn't visible under the CUPS daemon), the link is written
+// to a directory so it can be looked up after a test print - as a text
+// line in links.log and as a QR code PNG. Will later be replaced by the
+// actual QR view.
 package output
 
 import (
@@ -15,24 +15,24 @@ import (
 	"github.com/fritzthekid/myshare/internal/qrview"
 )
 
-// Dir ist das Ausgabeverzeichnis; Tests können es umbiegen.
+// Dir is the output directory; tests can redirect it.
 var Dir = "tmp"
 
-// Hook ist ein optionales externes Skript, das nach dem Schreiben von PNG +
-// Log-Zeile als `Hook <png-pfad> <link>` aufgerufen wird - z. B. um den
-// QR-Code auf einem angeschlossenen Display auszugeben (siehe raspi/).
-// Leer (Default) bedeutet: kein Hook.
+// Hook is an optional external script that's called as
+// `Hook <png-path> <link>` after writing the PNG + log line - e.g. to
+// display the QR code on an attached display (see raspi/). Empty (default)
+// means no hook.
 var Hook = ""
 
-// Default schreibt link als Zeile in Dir/links.log, rendert ihn zusätzlich
-// als QR-Code-PNG in Dir und ruft danach - falls gesetzt - Hook auf.
+// Default writes link as a line to Dir/links.log, additionally renders it
+// as a QR code PNG into Dir, and then - if set - calls Hook.
 func Default(link string) error {
 	return DefaultWithPassword(link, "")
 }
 
-// DefaultWithPassword ist wie Default, hängt aber - falls password nicht
-// leer ist - ein drittes Argument an den Hook-Aufruf an (siehe
-// cmd/backend: Nextcloud-Freigaben mit zusätzlichem Freigabe-Passwort,
+// DefaultWithPassword is like Default, but - if password is not empty -
+// appends it as a third argument to the hook call (see cmd/backend:
+// Nextcloud shares with an additional share password,
 // scripts/share-to-web.sh, internal/sharepassword).
 func DefaultWithPassword(link, password string) error {
 	if err := os.MkdirAll(Dir, 0o755); err != nil {
@@ -60,9 +60,9 @@ func DefaultWithPassword(link, password string) error {
 	return nil
 }
 
-// runHook ruft Hook auf, meldet einen Fehlschlag aber nur als Warnung: Link +
-// QR-PNG sind zu diesem Zeitpunkt bereits erfolgreich abgelegt, ein
-// nicht erreichbares Display soll den Druckjob nicht scheitern lassen.
+// runHook calls Hook, but only reports a failure as a warning: link + QR
+// PNG have already been successfully written at this point, an unreachable
+// display shouldn't make the print job fail.
 func runHook(pngPath, link, password string) {
 	args := []string{pngPath, link}
 	if password != "" {
@@ -72,9 +72,9 @@ func runHook(pngPath, link, password string) {
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		// CUPS routet Backend-Stderr-Zeilen nach ihrem (englischen) Präfix in
-		// die passende Loglevel-Kategorie; "WARNING:" landet damit auch bei
-		// LogLevel "warn" (Standard) sichtbar in /var/log/cups/error_log.
-		fmt.Fprintf(os.Stderr, "WARNING: Ausgabe-Hook (%s) fehlgeschlagen: %v\n", Hook, err)
+		// CUPS routes backend stderr lines by their (English) prefix into
+		// the matching log level category; "WARNING:" thus becomes visible
+		// in /var/log/cups/error_log even at the default log level "warn".
+		fmt.Fprintf(os.Stderr, "WARNING: output hook (%s) failed: %v\n", Hook, err)
 	}
 }

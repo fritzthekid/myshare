@@ -158,7 +158,7 @@ func TestEmptyDataIsRejected(t *testing.T) {
 	if len(outputs) != 0 {
 		t.Errorf("outputs = %v, want empty", outputs)
 	}
-	if !strings.Contains(stderr, "Keine Daten") {
+	if !strings.Contains(stderr, "no data") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }
@@ -166,7 +166,7 @@ func TestEmptyDataIsRejected(t *testing.T) {
 func TestUploadErrorIsReported(t *testing.T) {
 	defer withFakes(
 		func(data []byte, filename string, cfg *config.Config) (string, error) {
-			return "", &nextcloud.Error{Msg: "Upload fehlgeschlagen (507)"}
+			return "", &nextcloud.Error{Msg: "Upload failed (507)"}
 		},
 		nil,
 	)()
@@ -186,7 +186,7 @@ func TestUploadErrorIsReported(t *testing.T) {
 	if len(outputs) != 0 {
 		t.Errorf("outputs = %v, want empty", outputs)
 	}
-	if !strings.Contains(stderr, "Upload fehlgeschlagen") {
+	if !strings.Contains(stderr, "Upload failed") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }
@@ -200,7 +200,7 @@ func TestMissingArgumentsReturnsError(t *testing.T) {
 	if rc != 1 {
 		t.Fatalf("rc = %d, want 1", rc)
 	}
-	if !strings.Contains(stderr, "Aufruf:") {
+	if !strings.Contains(stderr, "Usage:") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }

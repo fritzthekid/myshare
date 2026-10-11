@@ -45,7 +45,7 @@ func TestPushFromLocalhostThenServed(t *testing.T) {
 	mux := newMux(&state{})
 
 	rec := httptest.NewRecorder()
-	mux.ServeHTTP(rec, multipartPushRequest(t, pngMagic, "https://cloud.example.com/s/abc/download", "geheim"))
+	mux.ServeHTTP(rec, multipartPushRequest(t, pngMagic, "https://cloud.example.com/s/abc/download", "secret"))
 	if rec.Code != http.StatusNoContent {
 		t.Fatalf("push status = %d, body = %s", rec.Code, rec.Body.String())
 	}
@@ -71,7 +71,7 @@ func TestPushFromLocalhostThenServed(t *testing.T) {
 	if status.Link != "https://cloud.example.com/s/abc/download" {
 		t.Errorf("Link = %q", status.Link)
 	}
-	if status.Password != "geheim" {
+	if status.Password != "secret" {
 		t.Errorf("Password = %q", status.Password)
 	}
 	if !status.HasImage {

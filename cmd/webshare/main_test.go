@@ -162,15 +162,15 @@ func TestUploadUsesLabelOverride(t *testing.T) {
 	)()
 
 	mux := newMux(testCfg, testToken)
-	req := multipartRequest(t, "/s/"+testToken+"/upload", "file", "original.dat", []byte("data"), "Anderer Titel.txt")
+	req := multipartRequest(t, "/s/"+testToken+"/upload", "file", "original.dat", []byte("data"), "Other Title.txt")
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	if !strings.HasSuffix(gotFilename, "_Anderer_Titel.txt") {
-		t.Errorf("gotFilename = %q, want suffix _Anderer_Titel.txt", gotFilename)
+	if !strings.HasSuffix(gotFilename, "_Other_Title.txt") {
+		t.Errorf("gotFilename = %q, want suffix _Other_Title.txt", gotFilename)
 	}
 }
 
@@ -199,7 +199,7 @@ func TestUploadEmptyFileReturns400(t *testing.T) {
 func TestUploadNextcloudErrorReturns502(t *testing.T) {
 	defer withFakes(
 		func(data []byte, filename string, cfg *config.Config) (string, error) {
-			return "", &nextcloud.Error{Msg: "Upload fehlgeschlagen (507)"}
+			return "", &nextcloud.Error{Msg: "Upload failed (507)"}
 		},
 		nil,
 	)()
@@ -216,7 +216,7 @@ func TestUploadNextcloudErrorReturns502(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("json.Unmarshal() error = %v", err)
 	}
-	if !strings.Contains(body.Error, "Upload fehlgeschlagen") {
+	if !strings.Contains(body.Error, "Upload failed") {
 		t.Errorf("Error = %q", body.Error)
 	}
 }

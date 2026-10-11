@@ -1,5 +1,5 @@
-// Package config liest die Treiber-Konfiguration ausschließlich aus
-// Umgebungsvariablen (R6).
+// Package config reads the driver configuration exclusively from
+// environment variables (R6).
 package config
 
 import (
@@ -20,7 +20,7 @@ type Config struct {
 	LenCode        int
 }
 
-// FromEnv baut die Config aus env. Ist env nil, wird os.Environ verwendet.
+// FromEnv builds the Config from env. If env is nil, os.Environ is used.
 func FromEnv(env map[string]string) (*Config, error) {
 	lookup := func(key string) (string, bool) {
 		if env != nil {
@@ -41,7 +41,7 @@ func FromEnv(env map[string]string) (*Config, error) {
 		values[key] = v
 	}
 	if len(missing) > 0 {
-		return nil, fmt.Errorf("Fehlende Umgebungsvariable(n): %s", strings.Join(missing, ", "))
+		return nil, fmt.Errorf("Missing environment variable(s): %s", strings.Join(missing, ", "))
 	}
 
 	targetDir := "/PrinterUploads"
@@ -53,7 +53,7 @@ func FromEnv(env map[string]string) (*Config, error) {
 	if v, ok := lookup("NC_LINK_EXPIRE_DAYS"); ok {
 		n, err := strconv.Atoi(v)
 		if err != nil {
-			return nil, fmt.Errorf("Ungültiger Wert für NC_LINK_EXPIRE_DAYS: %q", v)
+			return nil, fmt.Errorf("Invalid value for NC_LINK_EXPIRE_DAYS: %q", v)
 		}
 		expireDays = n
 	}
@@ -62,7 +62,7 @@ func FromEnv(env map[string]string) (*Config, error) {
 	if v, ok := lookup("NC_LEN_CODE"); ok {
 		n, err := strconv.Atoi(v)
 		if err != nil {
-			return nil, fmt.Errorf("Ungültiger Wert für NC_LEN_CODE: %q", v)
+			return nil, fmt.Errorf("Invalid value for NC_LEN_CODE: %q", v)
 		}
 		lenCode = n
 	}

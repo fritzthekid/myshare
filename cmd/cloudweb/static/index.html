@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QR-Anzeige</title>
+<title>QR Display</title>
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAELUExURSVj6yNi6iFg6iRi6iJg6iNh6kB27XKa8nOb8miT8S5p6yhl62CN8HSb8kt+7vr7/ufu/OPr/OTr/O/z/T517S9q687b+vT3/uXs/Pv8/pGw9VaG7z507T927Ttz7YSn8z917dHe+qK89jxz7Ud87tfi+5Sy9Xyh87LI97DG96/G91GC73CY8ZKx9anB97LH95Cv9DNt7NDd+pWz9f////7+/m6X8VKD783b+jlx7P39/m+Y8Thw7GqU8VyK8C5q6+3y/aa/9uTs/LzP+HGZ8XCZ8Xqf8uPq/JOy9ebt/C1p67rN+IWn8yJh6iZj6zJs7HOa8vH1/aG89pGw9FOE7/j6/vX3/tbi+/7+/rS0jssAAAABYktHRFjttcSOAAAAB3RJTUUH6gkODA4Xgo7WKwAAAUVJREFUOMvN09tWgkAYBWABDTxkMImaOYhplDqYIiBEHsq08tjJev83SRhIM6iVV+272fOxFvMzhEK/hyC9ULigwl4Rcfb3aAYnGnMEFU/su02SWK1J+oDlAADcIUg5T1B8OmMXIHuUI23AsMd5CKFQAKILiielVSGWTyUMuPzZeaVaQ2sgw3rlotFUWhgAWFFVTd8E7YyqGuYfQFXVLreAtgE4oWbp+tUm4Du61e15oF9AFkLo+sYDyuAWIWs4urt3QBTgPKQFDMYTFjfsdGavYykRR4jjSc5NtxAXuIh48b4FsVX8g1Dr+O/HeTfjua8IJ9JFnIlJ+AHy8elZfpFleeCO+htguBJ8bbf5IQgCANaXb5kO+gF8uTC7ALGhGEY3+B2y5aZpmr1REKCX74odLuCYkWROatmRpgv/WX/+vLOd7scHPfU2B+BQyecAAAAASUVORK5CYII=">
 <style>
   :root {
@@ -87,8 +87,8 @@
 </head>
 <body>
 <main class="card">
-  <div id="hint">Link scannen (oder eintippen)</div>
-  <div id="qr"><div class="placeholder">Warte auf den nächsten Druck …</div></div>
+  <div id="hint">Scan link (or type it in)</div>
+  <div id="qr"><div class="placeholder">Waiting for the next print job …</div></div>
   <div id="link"></div>
   <div id="password" class="hidden"></div>
   <div id="age"></div>
@@ -107,9 +107,9 @@
   function formatAge(updatedAt) {
     if (!updatedAt) return '';
     var seconds = Math.max(0, Math.round((Date.now() - new Date(updatedAt).getTime()) / 1000));
-    if (seconds < 60) return 'zuletzt aktualisiert vor ' + seconds + 's';
+    if (seconds < 60) return 'last updated ' + seconds + 's ago';
     var minutes = Math.round(seconds / 60);
-    return 'zuletzt aktualisiert vor ' + minutes + ' min';
+    return 'last updated ' + minutes + ' min ago';
   }
 
   function poll() {
@@ -119,13 +119,13 @@
         if (data.updated_at !== lastUpdatedAt) {
           lastUpdatedAt = data.updated_at;
           if (data.has_image) {
-            qrDiv.innerHTML = '<img src="current.png?t=' + Date.now() + '" alt="QR-Code">';
+            qrDiv.innerHTML = '<img src="current.png?t=' + Date.now() + '" alt="QR code">';
           }
           linkDiv.textContent = data.link || '';
           if (data.password) {
             passwordDiv.innerHTML =
               '<div class="code">CODE: ' + data.password + '</div>' +
-              '<div class="hint">Als Passwort bei Download verwenden: &quot;Nachname' + data.password + '&quot;</div>';
+              '<div class="hint">Use as password when downloading: &quot;Name' + data.password + '&quot;</div>';
             passwordDiv.classList.remove('hidden');
           } else {
             passwordDiv.classList.add('hidden');
@@ -133,7 +133,7 @@
         }
         ageDiv.textContent = formatAge(data.updated_at);
       })
-      .catch(function () { /* nächster Poll versucht's erneut */ });
+      .catch(function () { /* next poll will try again */ });
   }
 
   poll();

@@ -1,12 +1,11 @@
-// Package sharepassword leitet aus einem selbst gewählten Namen ein
-// Nextcloud-Freigabe-Passwort nach einem einfachen Zwei-Faktor-Schema ab
-// (siehe cmd/backend, scripts/share-to-web.sh): Nur die öffentlich
-// angezeigte Kurzform (Crypt) erscheint auf dem Ausdruck/der
-// cloudweb-Anzeige - wer nur die sieht (z. B. ein abfotografierter
-// QR-Code), kommt allein damit nicht an die Datei. Der Empfänger muss den
-// Namen zusätzlich außerhalb dieses Systems kennen (z. B. mündlich
-// vereinbart) und beim Öffnen des Links "<name><crypt>" als ein
-// zusammengesetztes Passwort eintippen.
+// Package sharepassword derives a Nextcloud share password from a
+// self-chosen name using a simple two-factor scheme (see cmd/backend,
+// scripts/share-to-web.sh): only the publicly displayed short form (crypt)
+// appears on the printout/cloudweb display - anyone who only sees that
+// (e.g. a photographed QR code) can't get to the file with it alone. The
+// recipient additionally has to know the name outside this system (e.g.
+// agreed verbally) and type "<name><crypt>" as a combined password when
+// opening the link.
 package sharepassword
 
 import (
@@ -17,30 +16,30 @@ import (
 	"strings"
 )
 
-// DefaultLength ist die Vorgabe für die Codelänge (NC_LEN_CODE, siehe
-// internal/config), falls nicht anders konfiguriert - durch 5 teilbar, damit
-// FormatGroups drei sauber gleich lange Fünfer-Gruppen ohne Rest liefert.
+// DefaultLength is the default code length (NC_LEN_CODE, see
+// internal/config) unless configured otherwise - divisible by 5, so
+// FormatGroups yields three evenly sized groups of five with no remainder.
 const DefaultLength = 15
 
-// Derive berechnet:
+// Derive computes:
 //
-//	crypt    = FormatGroups(base32(sha256(hardenedSeed))[:length]) - wird angezeigt/gedruckt
-//	password = name + crypt                                        - das tatsächliche Freigabe-Passwort
+//	crypt    = FormatGroups(base32(sha256(hardenedSeed))[:length]) - displayed/printed
+//	password = name + crypt                                        - the actual share password
 //
-// name und hardenedSeed sind bewusst getrennt: password besteht nur aus
-// name+crypt, weil das die einzigen zwei Teile sind, die der Empfänger
-// tatsächlich kennt/sieht (name mündlich vereinbart, crypt öffentlich
-// angezeigt). hardenedSeed fließt dagegen NUR in die Berechnung von crypt
-// ein und sollte mehr als nur name enthalten (z. B. + MAC-Adresse dieses
-// Rechners + ein pro Freigabe eindeutiger Wert, siehe LocalMAC,
-// cmd/backend) - sonst wäre crypt allein aus dem an den Empfänger
-// kommunizierten name berechenbar (keine echte 2FA) und bei jeder
-// Freigabe mit demselben name identisch.
+// name and hardenedSeed are deliberately kept separate: password consists
+// only of name+crypt, because those are the only two parts the recipient
+// actually knows/sees (name agreed verbally, crypt displayed publicly).
+// hardenedSeed, on the other hand, flows ONLY into the computation of
+// crypt and should contain more than just name (e.g. + this machine's MAC
+// address + a value unique per share, see LocalMAC, cmd/backend) -
+// otherwise crypt could be computed from just the name communicated to the
+// recipient (no real 2FA) and would be identical for every share with the
+// same name.
 //
-// crypt (und damit auch password) enthält Bindestriche als
-// Lesbarkeits-/Tipphilfe (siehe FormatGroups) - das tatsächlich bei
-// Nextcloud einzutippende Passwort ist exakt das, was angezeigt wird,
-// keine gedankliche Umformung durch den Empfänger nötig.
+// crypt (and thus also password) contains hyphens as a readability/typing
+// aid (see FormatGroups) - the password actually to be typed into
+// Nextcloud is exactly what's displayed, no mental transformation needed
+// by the recipient.
 func Derive(name, hardenedSeed string, length int) (crypt string, password string) {
 	if length <= 0 {
 		length = DefaultLength
@@ -51,10 +50,10 @@ func Derive(name, hardenedSeed string, length int) (crypt string, password strin
 	return crypt, name + crypt
 }
 
-// FormatGroups gliedert code in durch Bindestriche getrennte Fünfer-Gruppen
-// (z. B. "SJBB3ZMD7PR4HIQ" -> "SJBB3-ZMD7P-R4HIQ") - erleichtert das
-// fehlerfreie Ablesen/Abtippen eines langen zufälligen Codes. Ist die Länge
-// nicht durch 5 teilbar, ist die letzte Gruppe entsprechend kürzer.
+// FormatGroups splits code into hyphen-separated groups of five (e.g.
+// "SJBB3ZMD7PR4HIQ" -> "SJBB3-ZMD7P-R4HIQ") - makes it easier to read/type
+// a long random code without errors. If the length isn't divisible by 5,
+// the last group is correspondingly shorter.
 func FormatGroups(code string) string {
 	const groupSize = 5
 	if len(code) <= groupSize {
@@ -71,12 +70,12 @@ func FormatGroups(code string) string {
 	return strings.Join(groups, "-")
 }
 
-// LocalMAC liefert die MAC-Adresse der ersten gefundenen Netzwerk-
-// schnittstelle mit einer echten Hardware-Adresse (Loopback und
-// Schnittstellen ohne MAC werden übersprungen). Dient als stiller zweiter
-// Faktor beim Ableiten eines Freigabe-Passworts (siehe cmd/backend): ein
-// Angreifer, der nur den für den Empfänger bestimmten Namen kennt, kann
-// crypt ohne Kenntnis dieser MAC-Adresse nicht selbst nachrechnen.
+// LocalMAC returns the MAC address of the first network interface found
+// with a real hardware address (loopback and interfaces without a MAC are
+// skipped). Serves as a silent second factor when deriving a share
+// password (see cmd/backend): an attacker who only knows the name intended
+// for the recipient can't compute crypt themselves without knowing this
+// MAC address.
 func LocalMAC() (string, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -91,5 +90,5 @@ func LocalMAC() (string, error) {
 		}
 		return iface.HardwareAddr.String(), nil
 	}
-	return "", errors.New("keine Netzwerkschnittstelle mit MAC-Adresse gefunden")
+	return "", errors.New("no network interface with a MAC address found")
 }

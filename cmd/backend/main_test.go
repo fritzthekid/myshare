@@ -22,7 +22,7 @@ var testCfg = &config.Config{
 }
 
 func argv(filename string) []string {
-	a := []string{"backend", "42", "alice", "Testdokument", "1", ""}
+	a := []string{"backend", "42", "alice", "Testdocument", "1", ""}
 	if filename != "" {
 		a = append(a, filename)
 	}
@@ -124,10 +124,10 @@ func TestReadsPDFFromFile(t *testing.T) {
 }
 
 func TestNonPDFPayloadGetsMatchingExtension(t *testing.T) {
-	// "lp -d <queue> beliebige.zip" reicht Nicht-PDF-Inhalte unverändert
-	// durch (das Backend prüft das nicht) - die Endung muss dann am
-	// tatsächlichen Inhalt hängen, nicht blind ".pdf" sein, sonst würde
-	// die ZIP als "....zip.pdf" abgelegt.
+	// "lp -d <queue> arbitrary.zip" passes non-PDF content through
+	// unchanged (the backend doesn't check this) - the extension must then
+	// depend on the actual content, not blindly be ".pdf", otherwise the
+	// ZIP would end up as "....zip.pdf".
 	var gotFilename string
 	defer withFakes(
 		func(data []byte, filename string, cfg *config.Config) (string, error) {
@@ -139,24 +139,24 @@ func TestNonPDFPayloadGetsMatchingExtension(t *testing.T) {
 		},
 	)()
 
-	argvZip := []string{"backend", "42", "alice", "hummerbogen.zip", "1", ""}
+	argvZip := []string{"backend", "42", "alice", "testarchive.zip", "1", ""}
 	rc := run(argvZip, testCfg, func(link, password string) error { return nil }, strings.NewReader("PK\x03\x04 zip-content"))
 
 	if rc != 0 {
 		t.Fatalf("rc = %d, want 0", rc)
 	}
 	if !strings.HasSuffix(gotFilename, ".zip") {
-		t.Errorf("gotFilename = %q, want .zip suffix (nicht .pdf)", gotFilename)
+		t.Errorf("gotFilename = %q, want .zip suffix (not .pdf)", gotFilename)
 	}
 	if strings.HasSuffix(gotFilename, ".zip.zip") {
-		t.Errorf("gotFilename = %q, Titel-Endung .zip hätte entfernt werden müssen (Dopplung)", gotFilename)
+		t.Errorf("gotFilename = %q, title extension .zip should have been removed (duplication)", gotFilename)
 	}
 }
 
 func TestTitleExtensionKeptWhenItDiffersFromContent(t *testing.T) {
-	// Ein Jobtitel wie "Bericht.docx" bei echtem PDF-Inhalt (normaler
-	// Druck-Fall) behält seine Endung im Titel - nur eine mit dem Inhalt
-	// exakt übereinstimmende Titel-Endung wird entfernt (s. o.).
+	// A job title like "report.docx" with actual PDF content (normal print
+	// case) keeps its extension in the title - only a title extension that
+	// exactly matches the content is removed (see above).
 	var gotFilename string
 	defer withFakes(
 		func(data []byte, filename string, cfg *config.Config) (string, error) {
@@ -168,22 +168,22 @@ func TestTitleExtensionKeptWhenItDiffersFromContent(t *testing.T) {
 		},
 	)()
 
-	argvDocx := []string{"backend", "42", "alice", "Bericht.docx", "1", ""}
+	argvDocx := []string{"backend", "42", "alice", "report.docx", "1", ""}
 	rc := run(argvDocx, testCfg, func(link, password string) error { return nil }, strings.NewReader("%PDF-1.4"))
 
 	if rc != 0 {
 		t.Fatalf("rc = %d, want 0", rc)
 	}
-	if !strings.HasSuffix(gotFilename, "_Bericht.docx.pdf") {
-		t.Errorf("gotFilename = %q, want suffix _Bericht.docx.pdf", gotFilename)
+	if !strings.HasSuffix(gotFilename, "_report.docx.pdf") {
+		t.Errorf("gotFilename = %q, want suffix _report.docx.pdf", gotFilename)
 	}
 }
 
 func TestPasswordSeedFromOptionsDerivesPassword(t *testing.T) {
-	// "lp -o nc-password-seed=username" landet als "nc-password-seed=username"
-	// in argv[5] (options) - siehe scripts/share-to-web.sh. Die MAC-Adresse
-	// wird für einen deterministischen Test gemockt (fließt als stiller
-	// zweiter Faktor mit ein, siehe internal/sharepassword).
+	// "lp -o nc-password-seed=username" ends up as "nc-password-seed=username"
+	// in argv[5] (options) - see scripts/share-to-web.sh. The MAC address is
+	// mocked for a deterministic test (flows in as a silent second factor,
+	// see internal/sharepassword).
 	origMAC := localMAC
 	localMAC = func() (string, error) { return "mac", nil }
 	defer func() { localMAC = origMAC }()
@@ -209,17 +209,17 @@ func TestPasswordSeedFromOptionsDerivesPassword(t *testing.T) {
 	if rc != 0 {
 		t.Fatalf("rc = %d, want 0", rc)
 	}
-	// crypt jetzt in Fünfer-Gruppen (siehe internal/sharepassword.FormatGroups)
-	// und mit der neuen Default-Länge NC_LEN_CODE=15 (testCfg setzt LenCode
-	// nicht, Derive fällt daher auf sharepassword.DefaultLength zurück).
+	// crypt is now in groups of five (see internal/sharepassword.FormatGroups)
+	// and uses the new default length NC_LEN_CODE=15 (testCfg doesn't set
+	// LenCode, so Derive falls back to sharepassword.DefaultLength).
 	if gotCrypt != "XZTT7-HL7VO-AWOEW" {
-		t.Errorf("an out()/crypt übergebenes Passwort = %q, want %q", gotCrypt, "XZTT7-HL7VO-AWOEW")
+		t.Errorf("password passed to out()/crypt = %q, want %q", gotCrypt, "XZTT7-HL7VO-AWOEW")
 	}
-	// password darf NUR aus name+crypt bestehen (nicht dem erweiterten
-	// hardenedSeed), sonst kann der Empfänger es nie korrekt eintippen -
-	// genau dieser Bug wurde live beobachtet und hier fixiert.
+	// password must consist ONLY of name+crypt (not the extended
+	// hardenedSeed), otherwise the recipient could never type it correctly -
+	// exactly this bug was observed live and fixed here.
 	if gotPassword != "usernameXZTT7-HL7VO-AWOEW" {
-		t.Errorf("an createPublicLink übergebenes Passwort = %q, want %q", gotPassword, "usernameXZTT7-HL7VO-AWOEW")
+		t.Errorf("password passed to createPublicLink = %q, want %q", gotPassword, "usernameXZTT7-HL7VO-AWOEW")
 	}
 }
 
@@ -252,15 +252,15 @@ func TestPasswordSeedRespectsConfiguredLenCode(t *testing.T) {
 	}
 	rawLen := len(strings.ReplaceAll(gotCrypt, "-", ""))
 	if rawLen != 10 {
-		t.Errorf("crypt-Länge (ohne Bindestriche) = %d, want NC_LEN_CODE = 10 (crypt = %q)", rawLen, gotCrypt)
+		t.Errorf("crypt length (without hyphens) = %d, want NC_LEN_CODE = 10 (crypt = %q)", rawLen, gotCrypt)
 	}
 }
 
 func TestSameNameProducesDifferentCryptOnRepeatedRuns(t *testing.T) {
-	// remotePath (dank Zeitstempel pro Lauf eindeutig) fließt mit in die
-	// Passwort-Ableitung ein, damit derselbe "name" nicht jedes Mal
-	// denselben crypt ergibt (sonst könnte ein einmal gesehener crypt für
-	// alle künftigen Freigaben desselben Namens wiederverwendet werden).
+	// remotePath (unique per run thanks to the timestamp) flows into the
+	// password derivation so that the same "name" doesn't yield the same
+	// crypt every time (otherwise a crypt seen once could be reused for all
+	// future shares with the same name).
 	origMAC := localMAC
 	localMAC = func() (string, error) { return "mac", nil }
 	defer func() { localMAC = origMAC }()
@@ -283,20 +283,19 @@ func TestSameNameProducesDifferentCryptOnRepeatedRuns(t *testing.T) {
 	rc2 := run(argvWithSeed, testCfg, func(link, password string) error { crypt2 = password; return nil }, strings.NewReader("PK\x03\x04 zip-content"))
 
 	if rc1 != 0 || rc2 != 0 {
-		t.Fatalf("rc1=%d rc2=%d, want beide 0", rc1, rc2)
+		t.Fatalf("rc1=%d rc2=%d, want both 0", rc1, rc2)
 	}
 	if crypt1 == crypt2 {
-		t.Errorf("gleicher name lieferte zweimal denselben crypt: %q", crypt1)
+		t.Errorf("same name produced the same crypt twice: %q", crypt1)
 	}
 }
 
 func TestPasswordSeedRequestedButMACLookupFailsAborts(t *testing.T) {
-	// Ohne die MAC-Adresse wäre crypt allein aus dem an den Empfänger
-	// kommunizierten Namen berechenbar (keine echte 2FA) - deshalb lieber
-	// den ganzen Job scheitern lassen als still auf ein schwächeres Schema
-	// zurückzufallen.
+	// Without the MAC address, crypt could be computed from just the name
+	// communicated to the recipient (no real 2FA) - so it's better to let
+	// the whole job fail than to silently fall back to a weaker scheme.
 	origMAC := localMAC
-	localMAC = func() (string, error) { return "", errors.New("keine Netzwerkschnittstelle") }
+	localMAC = func() (string, error) { return "", errors.New("no network interface") }
 	defer func() { localMAC = origMAC }()
 
 	defer withFakes(
@@ -310,7 +309,7 @@ func TestPasswordSeedRequestedButMACLookupFailsAborts(t *testing.T) {
 	rc := run(argvWithSeed, testCfg, func(link, password string) error { return nil }, strings.NewReader("PK\x03\x04 zip-content"))
 
 	if rc != 1 {
-		t.Fatalf("rc = %d, want 1 (Job soll bei MAC-Lookup-Fehler scheitern)", rc)
+		t.Fatalf("rc = %d, want 1 (job should fail on MAC lookup error)", rc)
 	}
 }
 
@@ -336,10 +335,10 @@ func TestNoPasswordSeedMeansNoPassword(t *testing.T) {
 		t.Fatalf("rc = %d, want 0", rc)
 	}
 	if gotPassword != "" {
-		t.Errorf("gotPassword = %q, want leer (kein Seed übergeben)", gotPassword)
+		t.Errorf("gotPassword = %q, want empty (no seed passed)", gotPassword)
 	}
 	if gotCrypt != "" {
-		t.Errorf("gotCrypt = %q, want leer (kein Seed übergeben)", gotCrypt)
+		t.Errorf("gotCrypt = %q, want empty (no seed passed)", gotCrypt)
 	}
 }
 
@@ -385,7 +384,7 @@ func TestEmptyPDFIsRejected(t *testing.T) {
 	if len(outputs) != 0 {
 		t.Errorf("outputs = %v, want empty", outputs)
 	}
-	if !strings.Contains(stderr, "Keine PDF-Daten") {
+	if !strings.Contains(stderr, "no PDF data") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }
@@ -417,7 +416,7 @@ func TestFullFlowOutputsLink(t *testing.T) {
 func TestUploadErrorIsReported(t *testing.T) {
 	defer withFakes(
 		func(data []byte, filename string, cfg *config.Config) (string, error) {
-			return "", &nextcloud.Error{Msg: "Upload fehlgeschlagen (507)"}
+			return "", &nextcloud.Error{Msg: "Upload failed (507)"}
 		},
 		nil,
 	)()
@@ -437,7 +436,7 @@ func TestUploadErrorIsReported(t *testing.T) {
 	if len(outputs) != 0 {
 		t.Errorf("outputs = %v, want empty", outputs)
 	}
-	if !strings.Contains(stderr, "Upload fehlgeschlagen") {
+	if !strings.Contains(stderr, "Upload failed") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }
@@ -448,7 +447,7 @@ func TestShareErrorIsReported(t *testing.T) {
 			return "/PrinterUploads/x.pdf", nil
 		},
 		func(remotePath string, cfg *config.Config, password string) (string, error) {
-			return "", &nextcloud.Error{Msg: "Share-Erstellung fehlgeschlagen (404)"}
+			return "", &nextcloud.Error{Msg: "Failed to create share (404)"}
 		},
 	)()
 
@@ -467,7 +466,7 @@ func TestShareErrorIsReported(t *testing.T) {
 	if len(outputs) != 0 {
 		t.Errorf("outputs = %v, want empty", outputs)
 	}
-	if !strings.Contains(stderr, "Share-Erstellung fehlgeschlagen") {
+	if !strings.Contains(stderr, "Failed to create share") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }
@@ -481,7 +480,7 @@ func TestMissingArgumentsReturnsError(t *testing.T) {
 	if rc != 1 {
 		t.Fatalf("rc = %d, want 1", rc)
 	}
-	if !strings.Contains(stderr, "Aufruf:") {
+	if !strings.Contains(stderr, "Usage:") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }

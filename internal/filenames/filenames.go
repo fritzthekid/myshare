@@ -1,5 +1,5 @@
-// Package filenames erzeugt eindeutige, dateisystemsichere Dateinamen aus
-// Jobtitel + Zeitstempel (R3).
+// Package filenames generates unique, filesystem-safe filenames from job
+// title + timestamp (R3).
 package filenames
 
 import (
@@ -11,8 +11,8 @@ import (
 
 var unsafe = regexp.MustCompile(`[^A-Za-z0-9_.-]+`)
 
-// Generate baut "<timestamp>_<sicherer-titel><ext>". ext ohne führenden Punkt
-// wird automatisch normalisiert; ein leerer safeTitle fällt auf "print" zurück.
+// Generate builds "<timestamp>_<safe-title><ext>". ext without a leading dot
+// is normalized automatically; an empty safeTitle falls back to "print".
 func Generate(jobTitle string, ext string, timestamp time.Time) string {
 	if ext != "" && !strings.HasPrefix(ext, ".") {
 		ext = "." + ext
@@ -25,12 +25,12 @@ func Generate(jobTitle string, ext string, timestamp time.Time) string {
 	return ts + "_" + safeTitle + ext
 }
 
-// DetectExtension errät die Dateiendung anhand der ersten Bytes (Magic
-// Numbers). Für Aufrufer ohne verlässliche Dateiendung - z. B. das
-// CUPS-Backend, dessen Jobtitel beliebiger Text statt eines Dateinamens ist
-// und dessen Nutzlast trotz "PDF-Backend" nicht zwingend ein PDF ist (siehe
-// R1: "lp -d <queue> beliebige.zip" reicht die Datei unverändert durch).
-// Unbekannter Inhalt liefert ".bin".
+// DetectExtension guesses the file extension from the first bytes (magic
+// numbers). For callers without a reliable file extension - e.g. the CUPS
+// backend, whose job title is arbitrary text rather than a filename, and
+// whose payload, despite "PDF backend", isn't necessarily a PDF (see R1:
+// "lp -d <queue> arbitrary.zip" passes the file through unchanged).
+// Unknown content yields ".bin".
 func DetectExtension(data []byte) string {
 	switch {
 	case bytes.HasPrefix(data, []byte("%PDF-")):

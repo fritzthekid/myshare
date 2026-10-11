@@ -1,14 +1,14 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Datei teilen</title>
+<title>Share file</title>
 <!--
-  Icon: drei QR-Finder-Ecken auf dem Seiten-Blau, als Data-URI eingebettet
-  (kein zweiter Request/keine eigene Route nötig). Ohne das erzeugt "Zum
-  Startbildschirm hinzufügen" sonst ein Platzhalter-Icon aus dem ersten
-  Zeichen des Hostnamens - bei http://127.0.0.1:.../ zufällig eine "1".
+  Icon: three QR finder corners on the page blue, embedded as a data URI
+  (no second request/no own route needed). Without this, "Add to Home
+  Screen" otherwise generates a placeholder icon from the first character
+  of the hostname - for http://127.0.0.1:.../ that happens to be a "1".
 -->
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAELUExURSVj6yNi6iFg6iRi6iJg6iNh6kB27XKa8nOb8miT8S5p6yhl62CN8HSb8kt+7vr7/ufu/OPr/OTr/O/z/T517S9q687b+vT3/uXs/Pv8/pGw9VaG7z507T927Ttz7YSn8z917dHe+qK89jxz7Ud87tfi+5Sy9Xyh87LI97DG96/G91GC73CY8ZKx9anB97LH95Cv9DNt7NDd+pWz9f////7+/m6X8VKD783b+jlx7P39/m+Y8Thw7GqU8VyK8C5q6+3y/aa/9uTs/LzP+HGZ8XCZ8Xqf8uPq/JOy9ebt/C1p67rN+IWn8yJh6iZj6zJs7HOa8vH1/aG89pGw9FOE7/j6/vX3/tbi+/7+/rS0jssAAAABYktHRFjttcSOAAAAB3RJTUUH6gkODA4Xgo7WKwAAAUVJREFUOMvN09tWgkAYBWABDTxkMImaOYhplDqYIiBEHsq08tjJev83SRhIM6iVV+272fOxFvMzhEK/hyC9ULigwl4Rcfb3aAYnGnMEFU/su02SWK1J+oDlAADcIUg5T1B8OmMXIHuUI23AsMd5CKFQAKILiielVSGWTyUMuPzZeaVaQ2sgw3rlotFUWhgAWFFVTd8E7YyqGuYfQFXVLreAtgE4oWbp+tUm4Du61e15oF9AFkLo+sYDyuAWIWs4urt3QBTgPKQFDMYTFjfsdGavYykRR4jjSc5NtxAXuIh48b4FsVX8g1Dr+O/HeTfjua8IJ9JFnIlJ+AHy8elZfpFleeCO+htguBJ8bbf5IQgCANaXb5kO+gF8uTC7ALGhGEY3+B2y5aZpmr1REKCX74odLuCYkWROatmRpgv/WX/+vLOd7scHPfU2B+BQyecAAAAASUVORK5CYII=">
 <link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADAAQMAAABoEv5EAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAGUExURSVj6////y1UwPwAAAABYktHRAH/Ai3eAAAAB3RJTUUH6gkODA4Xgo7WKwAAAFxJREFUWMPt1kEKwCAMBdHc3Ny8tQSMLgNS8mFmEZC3EiRoRs16ojiMOLgiWE4bnlMOvustmFd0ALgAPV97GXpunzIQEcl3bDhl2KY2bD8AALgGOaWh5/YpA/3fC+67FRbYk9PJAAAAAElFTkSuQmCC">
@@ -131,21 +131,21 @@
 </head>
 <body>
 <main>
-  <h1>Datei teilen</h1>
+  <h1>Share file</h1>
 
   <div class="card" id="form-card">
-    <label id="pick-label" for="file-input">Datei auswählen …</label>
+    <label id="pick-label" for="file-input">Choose file …</label>
     <input type="file" id="file-input">
-    <input type="text" id="label-input" placeholder="Titel (optional)">
-    <button id="send-btn" disabled>Senden</button>
+    <input type="text" id="label-input" placeholder="Title (optional)">
+    <button id="send-btn" disabled>Send</button>
     <div id="status"></div>
   </div>
 
   <div class="card" id="result">
-    <img id="qr-img" alt="QR-Code">
+    <img id="qr-img" alt="QR code">
     <div id="link"></div>
-    <button id="copy-btn">Link kopieren</button>
-    <button id="reset-btn" class="secondary">Weitere Datei senden</button>
+    <button id="copy-btn">Copy link</button>
+    <button id="reset-btn" class="secondary">Send another file</button>
   </div>
 </main>
 
@@ -170,7 +170,7 @@
       pickLabel.classList.add('has-file');
       sendBtn.disabled = false;
     } else {
-      pickLabel.textContent = 'Datei auswählen …';
+      pickLabel.textContent = 'Choose file …';
       pickLabel.classList.remove('has-file');
       sendBtn.disabled = true;
     }
@@ -187,13 +187,13 @@
     }
 
     sendBtn.disabled = true;
-    status.textContent = 'Wird gesendet …';
+    status.textContent = 'Sending …';
     status.classList.remove('error');
 
     fetch('upload', { method: 'POST', body: data })
       .then(function (res) {
         return res.json().then(function (body) {
-          if (!res.ok) throw new Error(body.error || 'Fehler beim Senden');
+          if (!res.ok) throw new Error(body.error || 'Error sending file');
           return body;
         });
       })
@@ -213,15 +213,15 @@
 
   copyBtn.addEventListener('click', function () {
     navigator.clipboard.writeText(linkDiv.textContent).then(function () {
-      copyBtn.textContent = 'Kopiert!';
-      setTimeout(function () { copyBtn.textContent = 'Link kopieren'; }, 1500);
+      copyBtn.textContent = 'Copied!';
+      setTimeout(function () { copyBtn.textContent = 'Copy link'; }, 1500);
     });
   });
 
   resetBtn.addEventListener('click', function () {
     fileInput.value = '';
     labelInput.value = '';
-    pickLabel.textContent = 'Datei auswählen …';
+    pickLabel.textContent = 'Choose file …';
     pickLabel.classList.remove('has-file');
     sendBtn.disabled = true;
     status.textContent = '';

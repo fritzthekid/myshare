@@ -1,19 +1,18 @@
-// Command backend ist das CUPS-Backend: nimmt das von CUPS bereits nach PDF
-// konvertierte Druckjob entgegen, lädt es in eine Nextcloud-Instanz hoch,
-// erzeugt einen öffentlichen Freigabelink und gibt diesen aus (vorläufig als
-// reiner Text).
+// Command backend is the CUPS backend: receives the print job already
+// converted to PDF by CUPS, uploads it to a Nextcloud instance, creates a
+// public share link, and outputs it (for now as plain text).
 //
-// CUPS ruft Backends so auf:
+// CUPS invokes backends like this:
 //
 //	backend job-id user title copies options [filename]
 //
-// Die Druckdaten liegen in filename, falls vorhanden, sonst auf stdin.
+// The print data is in filename if present, otherwise on stdin.
 //
-// Enthält "options" ein "nc-password-seed=<seed>" (z. B. per
-// "lp -o nc-password-seed=<seed>", siehe scripts/share-to-web.sh), erhält
-// der Freigabelink zusätzlich ein aus seed abgeleitetes Passwort (siehe
-// internal/sharepassword) - nur die öffentlich angezeigte Kurzform (Crypt)
-// wird ausgegeben, nicht seed selbst.
+// If "options" contains "nc-password-seed=<seed>" (e.g. via
+// "lp -o nc-password-seed=<seed>", see scripts/share-to-web.sh), the share
+// link additionally gets a password derived from seed (see
+// internal/sharepassword) - only the publicly displayed short form (crypt)
+// is output, not seed itself.
 package main
 
 import (
@@ -32,7 +31,7 @@ import (
 	"github.com/fritzthekid/myshare/internal/sharepassword"
 )
 
-// Als Funktionsvariablen, damit Tests sie durch Fakes ersetzen können.
+// As function variables so tests can replace them with fakes.
 var (
 	uploadFile       = nextcloud.UploadFile
 	createPublicLink = nextcloud.CreatePublicLinkWithPassword
@@ -40,9 +39,9 @@ var (
 	localMAC         = sharepassword.LocalMAC
 )
 
-// passwordSeedFromOptions liest "nc-password-seed=<seed>" aus dem von CUPS
-// übergebenen Options-String (argv[5], per Leerzeichen getrennte
-// "key=value"-Paare) - siehe scripts/share-to-web.sh.
+// passwordSeedFromOptions reads "nc-password-seed=<seed>" from the options
+// string passed by CUPS (argv[5], space-separated "key=value" pairs) - see
+// scripts/share-to-web.sh.
 func passwordSeedFromOptions(options string) string {
 	for _, tok := range strings.Fields(options) {
 		if seed, ok := strings.CutPrefix(tok, "nc-password-seed="); ok {
@@ -52,7 +51,7 @@ func passwordSeedFromOptions(options string) string {
 	return ""
 }
 
-var errEmptyPDF = errors.New("Keine PDF-Daten erhalten")
+var errEmptyPDF = errors.New("no PDF data received")
 
 func readPDFData(argv []string, stdin io.Reader) ([]byte, error) {
 	if len(argv) >= 7 && argv[6] != "" {
@@ -64,10 +63,10 @@ func readPDFData(argv []string, stdin io.Reader) ([]byte, error) {
 	return io.ReadAll(stdin)
 }
 
-// discoveryLine ist die Antwort auf den CUPS-Geräteerkennungsaufruf (0
-// Argumente), wie sie z. B. "lpinfo -v" auswertet:
+// discoveryLine is the response to the CUPS device discovery call (0
+// arguments), as evaluated by e.g. "lpinfo -v":
 // https://www.cups.org/doc/man-backend.html
-const discoveryLine = `network nextcloud:/ "Unknown" "Nextcloud QR-Drucker" "Lädt PDF nach Nextcloud hoch und erzeugt einen QR-Code-Freigabelink"`
+const discoveryLine = `network nextcloud:/ "Unknown" "Nextcloud QR printer" "Uploads a PDF to Nextcloud and creates a QR code share link"`
 
 func run(argv []string, cfg *config.Config, out func(link, password string) error, stdin io.Reader) int {
 	if len(argv) == 1 {
@@ -75,7 +74,7 @@ func run(argv []string, cfg *config.Config, out func(link, password string) erro
 		return 0
 	}
 	if len(argv) < 6 {
-		fmt.Fprintln(os.Stderr, "Aufruf: backend job-id user title copies options [file]")
+		fmt.Fprintln(os.Stderr, "Usage: backend job-id user title copies options [file]")
 		return 1
 	}
 	jobTitle := argv[3]
@@ -110,18 +109,20 @@ func doRun(argv []string, jobTitle string, cfg *config.Config, stdin io.Reader) 
 		return "", "", errEmptyPDF
 	}
 
-	// CUPS liefert hier zwar meist echtes PDF, "lp -d <queue> beliebige.zip"
-	// reicht aber auch Nicht-PDF-Inhalte unverändert durch (das Backend
-	// prüft das nicht) - Endung deshalb am Inhalt statt blind an ".pdf"
-	// festmachen, sonst würde z. B. eine ZIP als "....zip.pdf" abgelegt.
+	// CUPS usually delivers real PDF here, but "lp -d <queue> arbitrary.zip"
+	// passes non-PDF content through unchanged too (the backend doesn't
+	// check this) - so the extension is based on content rather than
+	// blindly assumed to be ".pdf", otherwise e.g. a ZIP would end up as
+	// "....zip.pdf".
 	ext := filenames.DetectExtension(pdfBytes)
 	title := jobTitle
-	// "lp <datei>" ohne eigenen -t-Titel übernimmt den Dateinamen als
-	// Jobtitel (z. B. "testdata.zip") - trägt der schon exakt die erkannte
-	// Endung, würde sie sonst doppelt drankommen ("...testdata.zip.zip").
-	// Bewusst nur bei exakter Übereinstimmung entfernen: ein Titel wie
-	// "Bericht.docx" bei echtem PDF-Inhalt bleibt unangetastet
-	// (".docx.pdf" trägt dort noch Information, die keine Dopplung ist).
+	// "lp <file>" without its own -t title uses the filename as the job
+	// title (e.g. "testdata.zip") - if that already carries exactly the
+	// detected extension, it would otherwise be duplicated
+	// ("...testdata.zip.zip"). Deliberately stripped only on an exact
+	// match: a title like "report.docx" with actual PDF content is left
+	// untouched (".docx.pdf" still carries information there, not a
+	// duplication).
 	if titleExt := filepath.Ext(title); titleExt != "" && strings.EqualFold(titleExt, ext) {
 		title = strings.TrimSuffix(title, titleExt)
 	}
@@ -133,17 +134,16 @@ func doRun(argv []string, jobTitle string, cfg *config.Config, stdin io.Reader) 
 
 	var password string
 	if seed := passwordSeedFromOptions(argv[5]); seed != "" {
-		// Die MAC-Adresse dieses Rechners fließt als stiller zweiter Faktor
-		// mit ein: ohne sie wäre crypt allein aus dem an den Empfänger
-		// kommunizierten Namen (seed) berechenbar - keine echte 2FA.
-		// remotePath (dank Zeitstempel pro Lauf eindeutig) sorgt zusätzlich
-		// dafür, dass derselbe name nicht jedes Mal denselben crypt ergibt
-		// - der eigentliche Freigabelink steht an dieser Stelle noch nicht
-		// fest (der entsteht erst durch den Aufruf, dem wir das Passwort
-		// schon mitgeben müssen).
+		// This machine's MAC address flows in as a silent second factor:
+		// without it, crypt could be computed from just the name
+		// communicated to the recipient (seed) - no real 2FA. remotePath
+		// (unique per run thanks to the timestamp) additionally ensures
+		// that the same name doesn't yield the same crypt every time - the
+		// actual share link isn't known yet at this point (it's only
+		// created by the call we already have to pass the password to).
 		mac, macErr := localMAC()
 		if macErr != nil {
-			return "", "", fmt.Errorf("Passwort-Ableitung fehlgeschlagen (MAC-Adresse): %w", macErr)
+			return "", "", fmt.Errorf("password derivation failed (MAC address): %w", macErr)
 		}
 		crypt, password = sharepassword.Derive(seed, seed+mac+remotePath, cfg.LenCode)
 	}
@@ -152,10 +152,9 @@ func doRun(argv []string, jobTitle string, cfg *config.Config, stdin io.Reader) 
 	return link, crypt, err
 }
 
-// reportError meldet err auf stderr (CUPS-Konvention für fehlgeschlagene
-// Jobs) und liefert den Exit-Code 1: NextcloudError und die
-// "keine Daten"-Meldung bleiben unverändert, alles andere gilt als
-// unerwarteter Fehler.
+// reportError reports err to stderr (CUPS convention for failed jobs) and
+// returns exit code 1: a NextcloudError and the "no data" message are kept
+// as-is, anything else counts as an unexpected error.
 func reportError(err error) int {
 	switch {
 	case errors.Is(err, errEmptyPDF):
@@ -165,16 +164,16 @@ func reportError(err error) int {
 		if errors.As(err, &nce) {
 			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		} else {
-			fmt.Fprintf(os.Stderr, "ERROR: Unerwarteter Fehler: %v\n", err)
+			fmt.Fprintf(os.Stderr, "ERROR: unexpected error: %v\n", err)
 		}
 	}
 	return 1
 }
 
 func main() {
-	// "tmp" ist relativ zum Arbeitsverzeichnis des Prozesses; unter CUPS ist
-	// das nicht das Projektverzeichnis, deshalb per Env-Var überschreibbar
-	// (siehe deploy/backend.env.example).
+	// "tmp" is relative to the process's working directory; under CUPS
+	// that's not the project directory, hence overridable via an env var
+	// (see deploy/backend.env.example).
 	if dir := os.Getenv("MYSHARE_OUTPUT_DIR"); dir != "" {
 		output.Dir = dir
 	}

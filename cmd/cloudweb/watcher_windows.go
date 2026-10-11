@@ -16,35 +16,35 @@ import (
 	"github.com/fritzthekid/myshare/internal/qrview"
 )
 
-// printPollInterval bestimmt, wie schnell ein Druckauftrag über den
-// Datei-Port "CloudWeb" (siehe doc/anforderung_windows.md) erkannt wird -
-// eine feste Sekunde reicht für den Anwendungsfall (jemand druckt und
-// schaut danach auf die Anzeigeseite) und hält die Systemlast minimal.
+// printPollInterval determines how quickly a print job via the file port
+// "CloudWeb" (see doc/anforderung_windows.md) is detected - a fixed second
+// is enough for the use case (someone prints and then looks at the
+// display page) and keeps system load minimal.
 const printPollInterval = 1 * time.Second
 
-// incomingFileName ist der Name, den der Druckerport
-// "C:\ProgramData\myshare\incoming.pdf" erzeugt (siehe
+// incomingFileName is the name the printer port
+// "C:\ProgramData\myshare\incoming.pdf" produces (see
 // deploy/windows/install.ps1: Add-PrinterPort).
 const incomingFileName = "incoming.pdf"
 
-// Als Funktionsvariablen, damit Tests sie durch Fakes ersetzen können
-// (analog zu cmd/backend, cmd/sendfile).
+// As function variables so tests can replace them with fakes (analogous
+// to cmd/backend, cmd/sendfile).
 var (
 	uploadFile       = nextcloud.UploadFile
 	createPublicLink = nextcloud.CreatePublicLinkWithPassword
 )
 
-// startPrintWatcher beobachtet das feste Druckziel im Hintergrund: sobald
-// dort eine Datei erscheint, wird sie sofort atomar umbenannt (verhindert,
-// dass ein zweiter, schnell folgender Druckauftrag sie überschreibt, bevor
-// sie verarbeitet ist) und anschließend wie beim Linux-Backend hochgeladen
-// und freigegeben. Läuft bis stop geschlossen wird.
+// startPrintWatcher watches the fixed print target in the background: as
+// soon as a file appears there, it's immediately renamed atomically
+// (prevents a second, quickly following print job from overwriting it
+// before it's processed) and then uploaded and shared just like the Linux
+// backend. Runs until stop is closed.
 func startPrintWatcher(st *state, stop <-chan struct{}) {
 	dir := envfile.DefaultDir()
 	incoming := filepath.Join(dir, incomingFileName)
 
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		log.Printf("Druck-Watcher: Verzeichnis %s konnte nicht angelegt werden: %v", dir, err)
+		log.Printf("print watcher: could not create directory %s: %v", dir, err)
 		return
 	}
 
@@ -62,65 +62,65 @@ func startPrintWatcher(st *state, stop <-chan struct{}) {
 
 func checkIncoming(st *state, dir, incoming string) {
 	if _, err := os.Stat(incoming); err != nil {
-		return // noch kein neuer Druckauftrag
+		return // no new print job yet
 	}
 	processing := filepath.Join(dir, fmt.Sprintf("job-%d.pdf", time.Now().UnixNano()))
 	if err := os.Rename(incoming, processing); err != nil {
-		// Vermutlich schreibt der Spooler gerade noch - beim nächsten Tick
-		// erneut versuchen, statt eine halbfertige Datei zu verarbeiten.
-		log.Printf("Druck-Watcher: Umbenennen fehlgeschlagen (versuche es beim nächsten Tick erneut): %v", err)
+		// The spooler is probably still writing - try again on the next
+		// tick instead of processing a half-finished file.
+		log.Printf("print watcher: rename failed (will retry on next tick): %v", err)
 		return
 	}
 	go handlePrintedJob(st, processing)
 }
 
-// handlePrintedJob lädt eine bereits umbenannte, fertige Druckdatei hoch,
-// erzeugt den Freigabelink + QR-Code und aktualisiert die Anzeige (st) -
-// ohne Passwortschutz, das ist dem SendTo-Weg (cmd/fileshare) vorbehalten
-// (siehe doc/anforderung_windows.md).
+// handlePrintedJob uploads an already-renamed, finished print file,
+// creates the share link + QR code, and updates the display (st) - without
+// password protection, that's reserved for the SendTo path (cmd/fileshare)
+// (see doc/anforderung_windows.md).
 func handlePrintedJob(st *state, path string) {
 	defer func() {
 		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-			log.Printf("Druck-Watcher: temporäre Datei %s konnte nicht gelöscht werden: %v", path, err)
+			log.Printf("print watcher: could not delete temporary file %s: %v", path, err)
 		}
 	}()
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		log.Printf("Druck-Watcher: %s konnte nicht gelesen werden: %v", path, err)
+		log.Printf("print watcher: could not read %s: %v", path, err)
 		return
 	}
 	if len(data) == 0 {
-		log.Printf("Druck-Watcher: %s war leer, verworfen", path)
+		log.Printf("print watcher: %s was empty, discarded", path)
 		return
 	}
 
 	cfg, err := config.FromEnv(nil)
 	if err != nil {
-		log.Printf("Druck-Watcher: Konfiguration fehlt: %v", err)
+		log.Printf("print watcher: configuration missing: %v", err)
 		return
 	}
 
 	ext := filenames.DetectExtension(data)
-	filename := filenames.Generate("Druckauftrag", ext, time.Now())
+	filename := filenames.Generate("print-job", ext, time.Now())
 	remotePath, err := uploadFile(data, filename, cfg)
 	if err != nil {
-		log.Printf("Druck-Watcher: Upload fehlgeschlagen: %v", err)
+		log.Printf("print watcher: upload failed: %v", err)
 		return
 	}
 
 	link, err := createPublicLink(remotePath, cfg, "")
 	if err != nil {
-		log.Printf("Druck-Watcher: Freigabe fehlgeschlagen: %v", err)
+		log.Printf("print watcher: share creation failed: %v", err)
 		return
 	}
 
 	png, err := qrview.PNGBytes(link)
 	if err != nil {
-		log.Printf("Druck-Watcher: QR-Code konnte nicht erzeugt werden: %v", err)
+		log.Printf("print watcher: QR code could not be generated: %v", err)
 		return
 	}
 
 	st.set(png, link, "")
-	log.Printf("Druck-Watcher: neuer Druckauftrag verarbeitet -> %s", link)
+	log.Printf("print watcher: new print job processed -> %s", link)
 }

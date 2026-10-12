@@ -1,0 +1,77 @@
+---
+layout: default
+title: Overview
+---
+
+<section>
+  <nav>
+    <ul>
+      <li><a href="#sec-what">What is myshare</a></li>
+      <li><a href="#sec-next">Where to go next</a></li>
+      <li><a href="#sec-license">Source and license</a></li>
+      <hr>
+      <li><a href="installation.html">Installation</a></li>
+      <li><a href="usage.html">Usage</a></li>
+      <li><a href="software-details.html">Software details</a></li>
+    </ul>
+  </nav>
+
+  <article>
+    <h1>myshare</h1>
+
+    <h2 id="sec-what">What is myshare</h2>
+    <p>
+      <strong>myshare</strong> shares a file via
+      <a href="https://nextcloud.com/">Nextcloud</a> and shows the resulting
+      public link as a QR code - so whoever needs the file can just scan it
+      with their phone, instead of typing a link or waiting for an email.
+    </p>
+    <p>
+      It started as a CUPS backend (a "virtual printer" that uploads the PDF
+      instead of printing it on paper), and grew into several interchangeable
+      ways to trigger the same upload+share+QR-code flow:
+    </p>
+    <ul>
+      <li><strong>Print</strong> to a special CUPS queue (from any
+        application with a print dialog).</li>
+      <li><strong>Run a command</strong> (<code>sendfile</code>,
+        <code>scripts/share.sh</code>) for an arbitrary file, no printing
+        involved.</li>
+      <li><strong>Upload from a phone</strong> (<code>webshare</code>, incl. a
+        Termux build for Android).</li>
+      <li><strong>Drag a file onto "Send to"</strong> on Windows
+        (<code>fileshare.exe</code>).</li>
+    </ul>
+    <p>
+      The resulting QR code + link can show up on an attached Raspberry Pi
+      display, in any browser via <code>cloudweb</code>, or just in the
+      terminal log - whichever fits the situation.
+    </p>
+
+    <h2 id="sec-next">Where to go next</h2>
+    <div class="info-box">
+      <ul>
+        <li><strong><a href="installation.html">Installation</a></strong> -
+          set up the CUPS queues, the Raspberry Pi display,
+          <code>cloudweb</code>, or the Windows service.</li>
+        <li><strong><a href="usage.html">Usage</a></strong> - share a file
+          and see the result, including password-protected shares.</li>
+        <li><strong><a href="software-details.html">Software details</a></strong>
+          - package structure, protocols used, and where the automated tests
+          live.</li>
+      </ul>
+    </div>
+
+    <h2 id="sec-license">Source and license</h2>
+    <p>
+      The full source, the requirement → test mapping, and the issue
+      tracker live at
+      <a href="https://github.com/fritzthekid/myshare">github.com/fritzthekid/myshare</a>.
+    </p>
+    <p>
+      myshare is licensed under the GNU Affero General Public License v3.0
+      (or later) - see
+      <a href="https://github.com/fritzthekid/myshare/blob/main/LICENSE">LICENSE</a>.
+    </p>
+  </article>
+</section>

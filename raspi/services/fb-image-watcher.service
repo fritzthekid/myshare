@@ -9,7 +9,10 @@ User=root
 # delivered to via scp (service runs as root, $HOME would otherwise be
 # /root) - adjust before installing.
 Environment=WATCH_DIR=/home/CHANGE_ME/fb-drop
-Environment=FB_DEVICE=/dev/fb1
+# Which fb number the SPI TFT gets depends on probe order - check with
+# `dmesg | grep -i fb_ili9486` on this Pi before installing, it may not
+# be /dev/fb0.
+Environment=FB_DEVICE=/dev/fb0
 Environment=TIMEOUT=10
 ExecStart=/usr/local/bin/fb-image-watcher.sh
 Restart=on-failure

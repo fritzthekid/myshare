@@ -6,7 +6,10 @@
 set -euo pipefail
 
 WATCH_DIR="${WATCH_DIR:-$HOME/fb-drop}"
-FB_DEVICE="${FB_DEVICE:-/dev/fb1}"
+# Which fb number the SPI TFT gets depends on probe order (the vc4/HDMI
+# driver can also claim fb0 or fb1) - check with
+# `dmesg | grep -i fb_ili9486` on each Pi rather than assuming /dev/fb1.
+FB_DEVICE="${FB_DEVICE:-/dev/fb0}"
 TIMEOUT="${TIMEOUT:-60}"
 BLACK_PNG="${BLACK_PNG:-$HOME/.fb-image-watcher/black.png}"
 

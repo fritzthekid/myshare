@@ -56,14 +56,10 @@ show_image() {
 
     pkill -x fbi 2>/dev/null || true
     mkdir -p "$(dirname "$CURRENT_FILE")"
-    # fbi has no concept of transparency (the raw framebuffer is plain
-    # RGB) and renders transparent regions as solid black - flatten onto
-    # white first so a PNG with an alpha channel doesn't show up as a
-    # black rectangle.
     if [ "$INVERT" = "1" ]; then
-        convert "$file" -background white -flatten -negate "$CURRENT_FILE"
+        convert "$file" -negate "$CURRENT_FILE"
     else
-        convert "$file" -background white -flatten "$CURRENT_FILE"
+        cp "$file" "$CURRENT_FILE"
     fi
 
     setsid fbi -d "$FB_DEVICE" -T 1 -noverbose -a "$CURRENT_FILE" &

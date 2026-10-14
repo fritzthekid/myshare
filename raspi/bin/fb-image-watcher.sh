@@ -13,15 +13,29 @@ FB_DEVICE="${FB_DEVICE:-/dev/fb1}"
 TIMEOUT="${TIMEOUT:-60}"
 BLACK_PNG="${BLACK_PNG:-$HOME/.fb-image-watcher/black.png}"
 
+# Some SPI TFT overlays (e.g. waveshare35a) drive the panel with inverted
+# colors compared to others (e.g. tft35a) - detect which overlay is
+# active from the device tree instead of hardcoding one display model.
+DISPLAY_TYPE=$(ls /proc/device-tree/soc/spi@7e204000/ 2>/dev/null | grep -iE '^(tft35a|waveshare35a)@' | head -1 | cut -d@ -f1)
+if [ "$DISPLAY_TYPE" = "waveshare35a" ]; then
+    INVERT=1
+else
+    INVERT=0
+fi
+
 mkdir -p "$WATCH_DIR" "$(dirname "$BLACK_PNG")"
 
 # Clean starting state: kill orphaned fbi processes from a previous run
 # (e.g. after a crash/restart) before starting new ones.
 pkill -x fbi 2>/dev/null || true
 
-if [ ! -f "$BLACK_PNG" ]; then
-    RES=$(fbset -fb "$FB_DEVICE" -s | awk '/geometry/ {print $2"x"$3}')
-    RES="${RES:-480x320}"
+# Regenerated on every start (not just once) since INVERT can differ
+# between runs if the SD card/service config moves to a different Pi.
+RES=$(fbset -fb "$FB_DEVICE" -s | awk '/geometry/ {print $2"x"$3}')
+RES="${RES:-480x320}"
+if [ "$INVERT" = "1" ]; then
+    convert -size "$RES" xc:white "$BLACK_PNG"
+else
     convert -size "$RES" xc:black "$BLACK_PNG"
 fi
 
@@ -46,7 +60,12 @@ show_image() {
 
     pkill -x fbi 2>/dev/null || true
     mkdir -p "$(dirname "$CURRENT_FILE")"
-    cp "$file" "$CURRENT_FILE"
+
+    if [ "$INVERT" = "1" ]; then
+        convert "$file" -background white -alpha remove -alpha off -negate "$CURRENT_FILE"
+    else
+        cp "$file" "$CURRENT_FILE"
+    fi
 
     setsid fbi -d "$FB_DEVICE" -T 1 -noverbose -a "$CURRENT_FILE" &
     echo "$token" > "$GEN_FILE"

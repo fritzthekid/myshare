@@ -56,13 +56,32 @@ sudo reboot
 
 ### If colors are inverted (a solid black image shows up white)
 
-Some of these panels invert every color (black ↔ white, and everything
-else) regardless of what's actually written to the framebuffer, with no
-`dtoverlay` parameter to fix it (the documented `bgr` parameter swaps
-red/blue hues, not a full inversion - worth a quick try, but don't expect
-it to fix this specific symptom). Confirm it's a clean, uniform inversion
-rather than something else by negating a solid reference image and
-checking it comes out correct:
+Try the overlay's own `bgr` parameter **first** (no spaces, same as
+`rotate`):
+
+```
+dtoverlay=waveshare35a,rotate=270,bgr=1
+```
+
+A solid black/white test image can't distinguish a true color inversion
+from a red/blue **channel swap** - both look identical when every
+channel has the same value. In practice, `bgr=1` has fixed both the
+black/white symptom *and* genuine color accuracy on actual (non-grayscale)
+images - so don't rule it out as "only for hue, not inversion" just
+because a black/white test still looks the same either way. Confirm with
+a colorful test image, not just black/white:
+
+```bash
+scp doc/images/eyes-blitz.png <pi-host>:~/fb-drop/
+```
+
+If `bgr=1` alone (reboot required) makes this show correct colors, you're
+done - no software workaround needed. Only if it still doesn't look
+right, fall back to `INVERT=1` on the `fb-image-watcher` service (see
+step 3), which negates every image in software before displaying it -
+this cancels a pure inversion, but *not* a channel swap, so it's not a
+substitute for `bgr` if that's the actual problem. To check which kind of
+problem you have in isolation:
 
 ```bash
 convert -size 480x320 xc:black /tmp/black.png
@@ -70,10 +89,8 @@ convert -negate /tmp/black.png /tmp/notblack.png
 cat /tmp/notblack.png | pipetodisp.sh 10
 ```
 
-If that shows solid black (correct), set `INVERT=1` on the
-`fb-image-watcher` service (see step 3) - it negates every image in
-software before displaying it, which cancels the panel's own inversion
-back out.
+(solid black here only confirms *something* is inverted - not which fix
+is correct; use the colorful image test above for that.)
 
 ## 2) Verify the display works, before installing anything
 
@@ -208,13 +225,21 @@ not a bug to chase in `fb-image-watcher.sh`:
 6. A specific image shows up as a solid black rectangle while others work
    fine - that image likely has a transparent background (`identify
    -verbose <file> | grep Alpha`); `fb-image-watcher.sh` flattens
-   transparency onto white before displaying, but if you're testing with
+   transparency onto black before displaying, but if you're testing with
    an older copy of the script it may still be missing that step.
 7. After editing `/etc/systemd/system/fb-image-watcher.service` by hand
    (e.g. to add `INVERT`), double-check `WATCH_DIR` is still your real
    home directory and not the `/home/CHANGE_ME/fb-drop` placeholder -
    re-copying the service file from the repo to pick up one setting
    silently overwrites any other customization already made on the Pi.
+8. An image displays correctly but has a stray white (or otherwise
+   wrong-colored) border where it doesn't fill the whole screen - older
+   versions of `fb-image-watcher.sh` used `fbi -a` (autozoom), which only
+   draws the image's own pixels and leaves any leftover border as
+   whatever was already in the framebuffer (e.g. from an earlier raw
+   noise test), instead of filling it. The current version pre-composes
+   every image onto an exact-screen-size black canvas itself before
+   calling `fbi`, so this shouldn't occur with an up-to-date script.
 
 <!-- Add your own notes/additions from practice here, e.g. which overlay
      name worked for your specific display model. -->

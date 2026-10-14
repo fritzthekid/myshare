@@ -13,12 +13,14 @@ FB_DEVICE="${FB_DEVICE:-/dev/fb1}"
 TIMEOUT="${TIMEOUT:-60}"
 BLACK_PNG="${BLACK_PNG:-$HOME/.fb-image-watcher/black.png}"
 # Some cheap SPI TFT panels show every color fully inverted (black<->white
-# swapped) regardless of what's actually written to the framebuffer, with
-# no simple dtoverlay parameter to fix it at the driver level (confirmed
-# via a raw framebuffer write - if a solid black image shows up white,
-# this is it). Set INVERT=1 to compensate in software instead: every
-# image gets negated before being shown, which cancels the panel's own
-# inversion back out.
+# swapped) regardless of what's actually written to the framebuffer. Try
+# the dtoverlay's own "bgr" parameter first (see doc/raspi_setup.md) - a
+# solid black/white test image can't tell inversion apart from a red/blue
+# channel swap (both look identical for black/white), and only "bgr"
+# fixes the latter, which also affects colored images, not just
+# black/white. Set INVERT=1 here only if "bgr" doesn't fix it: every
+# image gets negated before being shown, which cancels a pure inversion
+# back out (but not a channel swap).
 INVERT="${INVERT:-0}"
 
 mkdir -p "$WATCH_DIR" "$(dirname "$BLACK_PNG")"
@@ -56,17 +58,21 @@ show_image() {
 
     pkill -x fbi 2>/dev/null || true
     mkdir -p "$(dirname "$CURRENT_FILE")"
-    # fbi has no concept of transparency (the raw framebuffer is plain
-    # RGB) and renders transparent regions as solid black - flatten onto
-    # white first so a PNG with an alpha channel doesn't show up as a
-    # black rectangle.
+    # Pre-compose onto an exact-screen-size black canvas ourselves instead
+    # of relying on fbi's own "-a" autozoom: fbi's autozoom only draws the
+    # image's own pixels and leaves any leftover border area (when the
+    # image's aspect ratio doesn't exactly match the screen) as whatever
+    # was already in the framebuffer, instead of filling it - this way the
+    # border is always a deterministic black. This also flattens PNG
+    # transparency onto black (fbi has no concept of alpha - a transparent
+    # background would otherwise render as an undefined color).
     if [ "$INVERT" = "1" ]; then
-        convert "$file" -background white -flatten -negate "$CURRENT_FILE"
+        convert "$file" -background black -flatten -resize "${RES}>" -gravity center -background black -extent "$RES" -negate "$CURRENT_FILE"
     else
-        convert "$file" -background white -flatten "$CURRENT_FILE"
+        convert "$file" -background black -flatten -resize "${RES}>" -gravity center -background black -extent "$RES" "$CURRENT_FILE"
     fi
 
-    setsid fbi -d "$FB_DEVICE" -T 1 -noverbose -a "$CURRENT_FILE" &
+    setsid fbi -d "$FB_DEVICE" -T 1 -noverbose "$CURRENT_FILE" &
     echo "$token" > "$GEN_FILE"
     (
         sleep "$TIMEOUT"

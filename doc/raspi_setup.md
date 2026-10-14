@@ -17,21 +17,31 @@ scripts, and are much faster to redo than debugging the whole pipeline.
 ## 1) Display driver (`/boot/firmware/config.txt`)
 
 There are many different cheap SPI TFT HATs, each needing its own
-`dtoverlay` - common names include `tft35a` and `waveshare35a` for 3.5"
-ILI9486-based HATs. Check your display's own documentation for the
-correct one if neither matches (`ls /boot/firmware/overlays/ | grep -i
-wave` / `grep -i tft` lists what's available on this OS image).
+`dtoverlay`, and this project has been run against more than one. Keep
+the line(s) for hardware you actually use and comment out the rest -
+don't delete a working config just because a different display is now
+the primary one, the old hardware tends to come back:
 
 ```
-dtoverlay=waveshare35a,rotate=270
+# ILI9486 3.5" HAT, "tft35a" overlay (colon syntax) - verified working:
+dtoverlay=tft35a:rotate=90
+
+# Waveshare 3.5" (A) HAT / clone, "waveshare35a" overlay (comma syntax) -
+# verified working:
+#dtoverlay=waveshare35a,rotate=270
 ```
 
-**No spaces around the commas** - `dtoverlay=waveshare35a, rotate=270`
-(with a space) loads the base overlay fine but silently fails to apply
-`rotate` at all, with no error anywhere (not in `dmesg`, not from
-`dtoverlay`) - the display just looks exactly like it would without the
-parameter, which is easy to misread as "rotate doesn't work on this
-overlay".
+Only one `dtoverlay=...` line for the display should be active (uncommented)
+at a time. Check your display's own documentation for the correct overlay
+name if neither matches (`ls /boot/firmware/overlays/ | grep -i wave` /
+`grep -i tft` lists what's available on this OS image).
+
+**No spaces around the commas** in the comma-style syntax -
+`dtoverlay=waveshare35a, rotate=270` (with a space) loads the base
+overlay fine but silently fails to apply `rotate` at all, with no error
+anywhere (not in `dmesg`, not from `dtoverlay`) - the display just looks
+exactly like it would without the parameter, which is easy to misread as
+"rotate doesn't work on this overlay".
 
 `rotate` takes 0/90/180/270; if the image ends up upside down, it's
 usually off by exactly 180 from whatever you have. List the parameters a

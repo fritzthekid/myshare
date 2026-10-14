@@ -17,21 +17,53 @@ scripts, and are much faster to redo than debugging the whole pipeline.
 ## 1) Display driver (`/boot/firmware/config.txt`)
 
 There are many different cheap SPI TFT HATs, each needing its own
-`dtoverlay`. For a common 3.5" ILI9486-based HAT:
+`dtoverlay` - common names include `tft35a` and `waveshare35a` for 3.5"
+ILI9486-based HATs. Check your display's own documentation for the
+correct one if neither matches (`ls /boot/firmware/overlays/ | grep -i
+wave` / `grep -i tft` lists what's available on this OS image).
 
 ```
-dtoverlay=tft35a:rotate=90
+dtoverlay=waveshare35a,rotate=270
 ```
 
-Check your display's own documentation for the correct overlay name if
-it's a different model (`ls /boot/firmware/overlays/ | grep -i tft` lists
-what's available on this OS image).
+**No spaces around the commas** - `dtoverlay=waveshare35a, rotate=270`
+(with a space) loads the base overlay fine but silently fails to apply
+`rotate` at all, with no error anywhere (not in `dmesg`, not from
+`dtoverlay`) - the display just looks exactly like it would without the
+parameter, which is easy to misread as "rotate doesn't work on this
+overlay".
+
+`rotate` takes 0/90/180/270; if the image ends up upside down, it's
+usually off by exactly 180 from whatever you have. List the parameters a
+specific overlay actually supports with `dtoverlay -h <name>` (e.g.
+`waveshare35a`, not `wave35` - the overlay name must match exactly).
 
 Reboot after changing `config.txt`:
 
 ```bash
 sudo reboot
 ```
+
+### If colors are inverted (a solid black image shows up white)
+
+Some of these panels invert every color (black ↔ white, and everything
+else) regardless of what's actually written to the framebuffer, with no
+`dtoverlay` parameter to fix it (the documented `bgr` parameter swaps
+red/blue hues, not a full inversion - worth a quick try, but don't expect
+it to fix this specific symptom). Confirm it's a clean, uniform inversion
+rather than something else by negating a solid reference image and
+checking it comes out correct:
+
+```bash
+convert -size 480x320 xc:black /tmp/black.png
+convert -negate /tmp/black.png /tmp/notblack.png
+cat /tmp/notblack.png | pipetodisp.sh 10
+```
+
+If that shows solid black (correct), set `INVERT=1` on the
+`fb-image-watcher` service (see step 3) - it negates every image in
+software before displaying it, which cancels the panel's own inversion
+back out.
 
 ## 2) Verify the display works, before installing anything
 
@@ -111,6 +143,8 @@ on the Pi:
 - `FB_DEVICE` - must match the device found in step 2 (default
   `/dev/fb1`; change it if your Pi registered the TFT as `/dev/fb0`
   instead).
+- `INVERT` - uncomment and set to `1` if your panel shows inverted colors
+  (see step 1).
 
 Then:
 
@@ -158,6 +192,9 @@ not a bug to chase in `fb-image-watcher.sh`:
    service watches (a mismatch between the `scp`/`ssh` user and the
    service's configured `WATCH_DIR` means the file lands somewhere the
    watcher never sees).
+5. Images show up but colors look wrong (not missing, just inverted) -
+   see "If colors are inverted" in step 1 and the service's `INVERT`
+   setting, not a pipeline bug.
 
 <!-- Add your own notes/additions from practice here, e.g. which overlay
      name worked for your specific display model. -->

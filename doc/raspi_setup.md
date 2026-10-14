@@ -205,6 +205,16 @@ not a bug to chase in `fb-image-watcher.sh`:
 5. Images show up but colors look wrong (not missing, just inverted) -
    see "If colors are inverted" in step 1 and the service's `INVERT`
    setting, not a pipeline bug.
+6. A specific image shows up as a solid black rectangle while others work
+   fine - that image likely has a transparent background (`identify
+   -verbose <file> | grep Alpha`); `fb-image-watcher.sh` flattens
+   transparency onto white before displaying, but if you're testing with
+   an older copy of the script it may still be missing that step.
+7. After editing `/etc/systemd/system/fb-image-watcher.service` by hand
+   (e.g. to add `INVERT`), double-check `WATCH_DIR` is still your real
+   home directory and not the `/home/CHANGE_ME/fb-drop` placeholder -
+   re-copying the service file from the repo to pick up one setting
+   silently overwrites any other customization already made on the Pi.
 
 <!-- Add your own notes/additions from practice here, e.g. which overlay
      name worked for your specific display model. -->

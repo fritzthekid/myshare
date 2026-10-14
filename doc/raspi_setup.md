@@ -54,27 +54,6 @@ Reboot after changing `config.txt`:
 sudo reboot
 ```
 
-### If colors are inverted (a solid black image shows up white)
-
-Some of these panels invert every color (black ↔ white, and everything
-else) regardless of what's actually written to the framebuffer, with no
-`dtoverlay` parameter to fix it (the documented `bgr` parameter swaps
-red/blue hues, not a full inversion - worth a quick try, but don't expect
-it to fix this specific symptom). Confirm it's a clean, uniform inversion
-rather than something else by negating a solid reference image and
-checking it comes out correct:
-
-```bash
-convert -size 480x320 xc:black /tmp/black.png
-convert -negate /tmp/black.png /tmp/notblack.png
-cat /tmp/notblack.png | pipetodisp.sh 10
-```
-
-If that shows solid black (correct), set `INVERT=1` on the
-`fb-image-watcher` service (see step 3) - it negates every image in
-software before displaying it, which cancels the panel's own inversion
-back out.
-
 ## 2) Verify the display works, before installing anything
 
 Check that the driver loaded and find out **which** `/dev/fb*` is the
@@ -153,8 +132,6 @@ on the Pi:
 - `FB_DEVICE` - must match the device found in step 2 (default
   `/dev/fb1`; change it if your Pi registered the TFT as `/dev/fb0`
   instead).
-- `INVERT` - uncomment and set to `1` if your panel shows inverted colors
-  (see step 1).
 
 Then:
 
@@ -202,9 +179,6 @@ not a bug to chase in `fb-image-watcher.sh`:
    service watches (a mismatch between the `scp`/`ssh` user and the
    service's configured `WATCH_DIR` means the file lands somewhere the
    watcher never sees).
-5. Images show up but colors look wrong (not missing, just inverted) -
-   see "If colors are inverted" in step 1 and the service's `INVERT`
-   setting, not a pipeline bug.
 
 <!-- Add your own notes/additions from practice here, e.g. which overlay
      name worked for your specific display model. -->

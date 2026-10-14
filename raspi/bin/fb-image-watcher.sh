@@ -12,14 +12,6 @@ WATCH_DIR="${WATCH_DIR:-$HOME/fb-drop}"
 FB_DEVICE="${FB_DEVICE:-/dev/fb1}"
 TIMEOUT="${TIMEOUT:-60}"
 BLACK_PNG="${BLACK_PNG:-$HOME/.fb-image-watcher/black.png}"
-# Some cheap SPI TFT panels show every color fully inverted (black<->white
-# swapped) regardless of what's actually written to the framebuffer, with
-# no simple dtoverlay parameter to fix it at the driver level (confirmed
-# via a raw framebuffer write - if a solid black image shows up white,
-# this is it). Set INVERT=1 to compensate in software instead: every
-# image gets negated before being shown, which cancels the panel's own
-# inversion back out.
-INVERT="${INVERT:-0}"
 
 mkdir -p "$WATCH_DIR" "$(dirname "$BLACK_PNG")"
 
@@ -27,11 +19,9 @@ mkdir -p "$WATCH_DIR" "$(dirname "$BLACK_PNG")"
 # (e.g. after a crash/restart) before starting new ones.
 pkill -x fbi 2>/dev/null || true
 
-RES=$(fbset -fb "$FB_DEVICE" -s | awk '/geometry/ {print $2"x"$3}')
-RES="${RES:-480x320}"
-if [ "$INVERT" = "1" ]; then
-    convert -size "$RES" xc:white "$BLACK_PNG"
-else
+if [ ! -f "$BLACK_PNG" ]; then
+    RES=$(fbset -fb "$FB_DEVICE" -s | awk '/geometry/ {print $2"x"$3}')
+    RES="${RES:-480x320}"
     convert -size "$RES" xc:black "$BLACK_PNG"
 fi
 
@@ -56,11 +46,7 @@ show_image() {
 
     pkill -x fbi 2>/dev/null || true
     mkdir -p "$(dirname "$CURRENT_FILE")"
-    if [ "$INVERT" = "1" ]; then
-        convert "$file" -negate "$CURRENT_FILE"
-    else
-        cp "$file" "$CURRENT_FILE"
-    fi
+    cp "$file" "$CURRENT_FILE"
 
     setsid fbi -d "$FB_DEVICE" -T 1 -noverbose -a "$CURRENT_FILE" &
     echo "$token" > "$GEN_FILE"

@@ -14,10 +14,6 @@ Environment=WATCH_DIR=/home/CHANGE_ME/fb-drop
 # /dev/fb1.
 Environment=FB_DEVICE=/dev/fb1
 Environment=TIMEOUT=10
-# Set to 1 if a solid black test image shows up white on your panel (see
-# doc/raspi_setup.md) - compensates in software for panels with inverted
-# colors.
-#Environment=INVERT=1
 ExecStart=/usr/local/bin/fb-image-watcher.sh
 Restart=on-failure
 StandardOutput=append:/var/log/fb-image-watcher.log

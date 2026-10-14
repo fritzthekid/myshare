@@ -216,6 +216,10 @@ display (queue `CloudToRaspi`):
 `convert` (ImageMagick) as well as passwordless SSH access from root (CUPS
 runs the backend as root) to the Pi.
 
+See [`doc/raspi_setup.md`](doc/raspi_setup.md) for the full Raspberry Pi
+side setup (display driver, verifying the display before installing
+anything, the systemd service, and troubleshooting).
+
 ### Alternative: QR display in the browser instead of the Pi display (`cmd/cloudweb`, queue `CloudWeb`)
 
 Needs no additional device: `cloudweb` is a small, standalone web server

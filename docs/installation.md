@@ -70,6 +70,12 @@ timing - check with `dmesg | grep -i fb_ili9486` on the Pi if nothing
 shows up, instead of assuming the default is correct.
 </div>
 
+See
+[doc/raspi_setup.md](https://github.com/fritzthekid/myshare/blob/main/doc/raspi_setup.md)
+for the full Raspberry Pi side guide, including how to verify the display
+is wired correctly *before* installing any of this, and a troubleshooting
+section.
+
 ## cloudweb (browser display, no extra device needed) {#sec-cloudweb}
 
 `cloudweb` is a small, standalone web server (no Nextcloud credentials

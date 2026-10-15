@@ -5,10 +5,10 @@ After=multi-user.target
 [Service]
 Type=simple
 User=root
-# WATCH_DIR must point to the home directory of the user the images are
-# delivered to via scp (service runs as root, $HOME would otherwise be
-# /root) - adjust before installing.
-Environment=WATCH_DIR=/home/CHANGE_ME/fb-drop
+# Deliberately not tied to any one user's $HOME (the service runs as
+# root, but files are delivered by whichever user scp's them in) -
+# override here if you'd rather use a different path.
+Environment=WATCH_DIR=/tmp/fb-image-watcher/fb-drop
 # Which fb number the SPI TFT gets can vary - if nothing shows up, check
 # with `dmesg | grep -i fb_ili9486` on this Pi instead of assuming
 # /dev/fb1.

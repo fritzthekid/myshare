@@ -5,13 +5,26 @@
 
 set -euo pipefail
 
-WATCH_DIR="${WATCH_DIR:-$HOME/fb-drop}"
+# Deliberately not home-relative by default (the service runs as root,
+# and the delivering user may differ from whoever installed the
+# service) - still overridable via the environment like FB_DEVICE/
+# TIMEOUT/BLACK_PNG below.
+FB_IMAGE_WATCH_DIR=/tmp/fb-image-watcher
+mkdir -p "$FB_IMAGE_WATCH_DIR"
+WATCH_DIR="${WATCH_DIR:-$FB_IMAGE_WATCH_DIR/fb-drop}"
+WATCH_TMP_DIR="$FB_IMAGE_WATCH_DIR/tmp"
+mkdir -p "$WATCH_DIR"
+# Needs the execute bit too, not just rw, or a non-root user can't
+# traverse into/write into this directory via scp.
+chmod 777 "$WATCH_DIR"
+mkdir -p "$WATCH_TMP_DIR"
+
 # Which fb number the SPI TFT gets can vary (the vc4/HDMI driver can also
 # claim fb0 or fb1, depending on probe timing) - if nothing shows up,
 # check with `dmesg | grep -i fb_ili9486` instead of assuming /dev/fb1.
 FB_DEVICE="${FB_DEVICE:-/dev/fb1}"
 TIMEOUT="${TIMEOUT:-60}"
-BLACK_PNG="${BLACK_PNG:-$HOME/.fb-image-watcher/black.png}"
+BLACK_PNG="$WATCH_TMP_DIR"/black.png
 
 # Some SPI TFT overlays (e.g. waveshare35a) drive the panel with inverted
 # colors compared to others (e.g. tft35a) - detect which overlay is
@@ -22,8 +35,6 @@ if [ "$DISPLAY_TYPE" = "waveshare35a" ]; then
 else
     INVERT=0
 fi
-
-mkdir -p "$WATCH_DIR" "$(dirname "$BLACK_PNG")"
 
 # Clean starting state: kill orphaned fbi processes from a previous run
 # (e.g. after a crash/restart) before starting new ones.
@@ -39,7 +50,7 @@ else
     convert -size "$RES" xc:black "$BLACK_PNG"
 fi
 
-CURRENT_FILE=/tmp/fb-image-watcher/current-file
+CURRENT_FILE="$WATCH_TMP_DIR"/current-file
 GEN_FILE=/tmp/fb-image-watcher.pid
 
 # "setsid cmd &" often yields in $! only the PID of the short-lived setsid

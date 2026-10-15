@@ -110,12 +110,12 @@ scp raspi/bin/* <pi-host>:/tmp/
 ssh <pi-host> 'sudo cp /tmp/pipetodisp.sh /tmp/fb-image-watcher.sh /usr/local/bin/ && sudo chmod +x /usr/local/bin/pipetodisp.sh /usr/local/bin/fb-image-watcher.sh'
 ```
 
-On the Pi, create the watch directory (default `~/fb-drop`, must match
-the user that files get `scp`'d in as - see `raspi/services/fb-image-watcher.service`):
-
-```bash
-mkdir -p ~/fb-drop
-```
+The watch directory (`/tmp/fb-image-watcher/fb-drop` by default) is
+created and made world-writable by `fb-image-watcher.sh` itself on
+startup - deliberately not tied to any one user's home directory by
+default, since the service runs as root but files are delivered by
+whichever user `scp`'s them in. No manual step needed here unless you
+want a different path (see `WATCH_DIR` below).
 
 Install the systemd service:
 
@@ -127,11 +127,16 @@ ssh <pi-host> sudo cp /tmp/fb-image-watcher.service /etc/systemd/system/
 **Before enabling it**, edit `/etc/systemd/system/fb-image-watcher.service`
 on the Pi:
 
-- `WATCH_DIR` - must point at the home directory of the user files are
-  delivered to (the placeholder is `/home/CHANGE_ME/fb-drop`).
 - `FB_DEVICE` - must match the device found in step 2 (default
   `/dev/fb1`; change it if your Pi registered the TFT as `/dev/fb0`
   instead).
+- `WATCH_DIR` - only if you want a different path than the default
+  `/tmp/fb-image-watcher/fb-drop`. If you do change it, also set the
+  same `WATCH_DIR` when invoking `pipetodisp.sh` (environment variable,
+  e.g. `ssh <pi-host> WATCH_DIR=/your/path pipetodisp.sh ...`) - the two
+  scripts only talk to each other through this shared directory, so a
+  mismatch here silently breaks the pipeline (watcher sees nothing, no
+  error on either side).
 
 Then:
 
@@ -145,7 +150,7 @@ ssh <pi-host> systemctl status fb-image-watcher --no-pager
 From the repo, with a sample image:
 
 ```bash
-scp doc/images/output_on_raspberry.jpg <pi-host>:~/fb-drop/
+scp doc/images/output_on_raspberry.jpg <pi-host>:/tmp/fb-image-watcher/fb-drop/
 ```
 
 The image should appear on the display for `TIMEOUT` seconds (default 60,
@@ -175,10 +180,13 @@ not a bug to chase in `fb-image-watcher.sh`:
    not crash-looping.
 3. `tail -f /var/log/fb-image-watcher.log` while copying a test image in
    - repeated font-loading lines from `fbi` are normal; errors are not.
-4. Confirm the file actually arrives in `WATCH_DIR` as the same user the
-   service watches (a mismatch between the `scp`/`ssh` user and the
-   service's configured `WATCH_DIR` means the file lands somewhere the
-   watcher never sees).
+4. Confirm the file actually arrives in `/tmp/fb-image-watcher/fb-drop` -
+   e.g. `ls` it right after a test `scp`. If the delivering user gets
+   "Permission denied" writing there, check that the directory is
+   actually `777` (`ls -ld /tmp/fb-image-watcher/fb-drop`) - it's
+   (re)created by `fb-image-watcher.sh` on every service start, so a
+   stale directory from before an update, or the service not having
+   (re)started yet, can leave it with the wrong permissions.
 
 <!-- Add your own notes/additions from practice here, e.g. which overlay
      name worked for your specific display model. -->
